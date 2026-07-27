@@ -1,0 +1,39 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AdminLayout from '../components/admin/AdminLayout';
+import CategoryManager from '../components/admin/CategoryManager';
+import MangaManager from '../components/admin/MangaManager';
+import Dashboard from './admin/Dashboard';
+import AdsManager from './admin/AdsManager';
+import FeaturedManager from './admin/FeaturedManager';
+import ContactManager from './admin/ContactManager';
+import IkiruSync from './admin/IkiruSync';
+import ApanimeSync from './admin/ApanimeSync';
+import UserManager from './admin/UserManager';
+import OrderManager from './admin/OrderManager';
+import StickerManager from './admin/StickerManager';
+import MangaMigration from './admin/MangaMigration';
+
+const Admin = () => {
+  return (
+    <AdminLayout>
+      <Routes>
+        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="categories" element={<CategoryManager />} />
+        <Route path="manga" element={<MangaManager />} />
+        <Route path="ads" element={<AdsManager />} />
+        <Route path="featured" element={<FeaturedManager />} />
+        <Route path="contact" element={<ContactManager />} />
+        <Route path="ikiru-sync" element={<IkiruSync />} />
+        <Route path="apanime-sync" element={<ApanimeSync />} />
+        <Route path="migration" element={<MangaMigration />} />
+        <Route path="users" element={<UserManager />} />
+        <Route path="orders" element={<OrderManager />} />
+        <Route path="stickers" element={<StickerManager />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    </AdminLayout>
+  );
+};
+
+export default Admin;

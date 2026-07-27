@@ -1,0 +1,1114 @@
+// export const API_BASE_URL = 'https://be-api.nesiatv.net/api';
+// export const API_BASE_URL_WITHOUT_API = 'https://be-api.nesiatv.net';
+// export const API_BASE_URL = 'http://localhost:8080/api';
+// export const API_BASE_URL_WITHOUT_API = 'http://localhost:8080';
+
+// export const API_BASE_URL = 'https://be-api-node.nesiatv.net//api';
+// export const API_BASE_URL_WITHOUT_API = 'https://be-api-node.nesiatv.net/';
+export const API_BASE_URL = 'https://api-be.nesiatv.my.id/api';
+export const API_BASE_URL_WITHOUT_API = 'https://api-be.nesiatv.my.id/';
+
+/** Origin for static files (no trailing slash). Same host as API, path /uploads is served by backend. */
+const STATIC_ORIGIN = API_BASE_URL_WITHOUT_API.replace(/\/+$/, '');
+
+/** CDN Ikiru — butuh header access-code; browser langsung ke host ini dapat promo-ikiru.webp */
+const IKIRU_CDN_HOSTS = new Set(['cdn.itachi.my.id', 'yuucdn.com', 'www.yuucdn.com']);
+
+/**
+ * Map legacy /uploads-nesiatv/... to public /uploads/... (Express serves disk folder at /uploads).
+ * @param {string} pathname - URL pathname starting with /
+ */
+function normalizeUploadsPathname(pathname) {
+  if (pathname.startsWith('/uploads-nesiatv/')) {
+    return '/uploads/' + pathname.slice('/uploads-nesiatv/'.length);
+  }
+  return pathname;
+}
+
+function isIkiruCdnUrl(url) {
+  try {
+    const u = new URL(url);
+    return IKIRU_CDN_HOSTS.has(u.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+export function toProxiedImageUrlIfNeeded(imagePath) {
+  if (!imagePath) return imagePath;
+  try {
+    const u = new URL(imagePath);
+    const host = u.hostname.toLowerCase();
+    if (host === 'yuucdn.com' || host === 'www.yuucdn.com') {
+      return `https://proxy.cdnesia.my.id/?url=${encodeURIComponent(imagePath)}`;
+    }
+    if (host === 'cdnap.site' || host === 'www.cdnap.site') {
+      return `${API_BASE_URL}/image-proxy?url=${encodeURIComponent(imagePath)}`;
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  return imagePath;
+}
+
+/**
+ * Get full image URL with endpoint prefix if the path is relative
+ * @param {string} imagePath - Image path (can be relative like "/uploads/..." or absolute URL)
+ * @returns {string} Full image URL
+ */
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+
+  let path = typeof imagePath === 'string' ? imagePath.replace(/\\\//g, '/').trim() : String(imagePath);
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    try {
+      const u = new URL(path);
+      const proxied = toProxiedImageUrlIfNeeded(u.toString());
+      if (proxied !== u.toString()) return proxied;
+
+      const next = normalizeUploadsPathname(u.pathname);
+      if (next !== u.pathname) {
+        u.pathname = next;
+        return u.toString();
+      }
+    } catch {
+      /* ignore */
+    }
+    return toProxiedImageUrlIfNeeded(path) || path;
+  }
+
+  if (path.startsWith('uploads/')) {
+    path = `/${path}`;
+  }
+
+  if (path.startsWith('/')) {
+    return `${STATIC_ORIGIN}${normalizeUploadsPathname(path)}`;
+  }
+
+  return path;
+};
+
+class APIClient {
+  getDeviceId() {
+    const key = 'device_id';
+    let deviceId = localStorage.getItem(key);
+    if (deviceId && /^[a-zA-Z0-9_-]{8,40}$/.test(deviceId)) return deviceId;
+
+    deviceId = `dv_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-6)}`;
+    localStorage.setItem(key, deviceId);
+    return deviceId;
+  }
+
+  getAuthToken() {
+    return localStorage.getItem('auth_token');
+  }
+
+  setAuthToken(token) {
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const isFormData = options.body instanceof FormData;
+    const token = this.getAuthToken();
+    const isAuthAnonymous =
+      endpoint === '/auth/login' ||
+      endpoint.startsWith('/auth/login?') ||
+      endpoint === '/auth/register' ||
+      endpoint.startsWith('/auth/register?');
+
+    // Build headers: start with custom headers, then add Content-Type, then add Authorization (so it can't be overridden)
+    const headers = {
+      ...options.headers,
+      // Don't set Content-Type for FormData - browser will set it with boundary
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      'X-Device-Id': this.getDeviceId(),
+    };
+
+    // Always add auth token if available (this will override any Authorization in options.headers)
+    if (token && !isAuthAnonymous) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const config = {
+      ...options,
+      headers,
+    };
+
+    if (config.body && typeof config.body === 'object' && !isFormData) {
+      config.body = JSON.stringify(config.body);
+    }
+
+    try {
+      const response = await fetch(url, config);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+        const err = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        err.status = response.status;
+        throw err;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Auth methods
+  async register(formData) {
+    const url = `${API_BASE_URL}/auth/register`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (data && data.status && data.data && data.data.token) {
+      this.setAuthToken(data.data.token);
+    }
+    return data;
+  }
+
+  async login(username, password) {
+    const response = await this.request('/auth/login', {
+      method: 'POST',
+      body: { username, password },
+    });
+    if (response && response.status && response.data && response.data.token) {
+      this.setAuthToken(response.data.token);
+    }
+    return response;
+  }
+
+  async getMe() {
+    return this.request('/auth/me');
+  }
+
+  async getUserProfile(username) {
+    return this.request(`/auth/profile/${encodeURIComponent(username)}`);
+  }
+
+  async updateProfile(formData) {
+    return this.request('/auth/profile', {
+      method: 'PUT',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  // Admin users
+  getAdminUsers({ search = '', page = 1, limit = 20 } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(search ? { search } : {}),
+    });
+    return this.request(`/admin/users?${params.toString()}`);
+  }
+
+  createAdminUser(payload) {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: payload,
+    });
+  }
+
+  updateAdminUser(id, payload) {
+    return this.request(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  }
+
+  deleteAdminUser(id) {
+    return this.request(`/admin/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Premium orders
+  createPremiumOrder(formData) {
+    return this.request('/premium-orders', {
+      method: 'POST',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  getAdminPremiumOrders({ search = '', page = 1, limit = 10 } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(search ? { search } : {}),
+    });
+    return this.request(`/premium-orders/admin?${params.toString()}`);
+  }
+
+  updateAdminPremiumOrderStatus(id, payment_status) {
+    return this.request(`/premium-orders/admin/${id}/status`, {
+      method: 'PATCH',
+      body: { payment_status },
+    });
+  }
+
+  deleteAdminPremiumOrder(id) {
+    return this.request(`/premium-orders/admin/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Stickers (publik, max limit 50 per halaman)
+  getStickers({ page = 1, limit = 50 } = {}) {
+    const safeLimit = Math.min(Math.max(parseInt(String(limit), 10) || 50, 1), 50);
+    const params = new URLSearchParams({
+      page: String(Math.max(parseInt(String(page), 10) || 1, 1)),
+      limit: String(safeLimit),
+    });
+    return this.request(`/stickers?${params.toString()}`);
+  }
+
+  getAdminStickers({ search = '', page = 1, limit = 10 } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(search ? { search } : {}),
+    });
+    return this.request(`/stickers/admin?${params.toString()}`);
+  }
+
+  createAdminSticker(formData) {
+    return this.request('/stickers/admin', {
+      method: 'POST',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  updateAdminSticker(id, formData) {
+    return this.request(`/stickers/admin/${id}`, {
+      method: 'PUT',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  deleteAdminSticker(id) {
+    return this.request(`/stickers/admin/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Public leaderboard
+  getLeaderboard({ page = 1, limit = 20 } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    return this.request(`/leaderboard?${params.toString()}`);
+  }
+
+  // Live chat
+  getLiveChats({ limit = 100 } = {}) {
+    const params = new URLSearchParams({
+      limit: String(limit),
+    });
+    return this.request(`/live-chat?${params.toString()}`);
+  }
+
+  postLiveChat(message) {
+    return this.request('/live-chat', {
+      method: 'POST',
+      body: { message },
+    });
+  }
+
+  logout() {
+    this.setAuthToken(null);
+  }
+
+  // Bookmarks (requires auth)
+  getBookmarks({ page = 1, limit = 24 } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    return this.request(`/bookmarks?${params.toString()}`);
+  }
+
+  addBookmark(animeIdOrSlug) {
+    const key = Number.isNaN(Number(animeIdOrSlug)) ? 'slug' : 'anime_id';
+    return this.request('/bookmarks', {
+      method: 'POST',
+      body: { [key]: animeIdOrSlug },
+    });
+  }
+
+  removeBookmark(animeIdOrSlug) {
+    return this.request(`/bookmarks/${encodeURIComponent(animeIdOrSlug)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  checkBookmark(animeIdOrSlug) {
+    return this.request(`/bookmarks/check/${encodeURIComponent(animeIdOrSlug)}`);
+  }
+
+  // Readlists (requires auth)
+  getReadlists() {
+    return this.request('/readlists');
+  }
+
+  createReadlist(body) {
+    return this.request('/readlists', {
+      method: 'POST',
+      body,
+    });
+  }
+
+  getReadlist(id) {
+    return this.request(`/readlists/${encodeURIComponent(id)}`);
+  }
+
+  updateReadlist(id, body) {
+    return this.request(`/readlists/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body,
+    });
+  }
+
+  deleteReadlist(id) {
+    return this.request(`/readlists/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  addReadlistItems(id, body) {
+    return this.request(`/readlists/${encodeURIComponent(id)}/items`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  removeReadlistItem(readlistId, animeIdOrSlug) {
+    return this.request(
+      `/readlists/${encodeURIComponent(readlistId)}/items/${encodeURIComponent(animeIdOrSlug)}`,
+      {
+        method: 'DELETE',
+      },
+    );
+  }
+
+  // Comments
+  getComments(params) {
+    const q = new URLSearchParams(params).toString();
+    return this.request(`/comments?${q}`);
+  }
+
+  postComment(body) {
+    return this.request('/comments', {
+      method: 'POST',
+      body,
+    });
+  }
+
+  deleteComment(id) {
+    return this.request(`/comments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Categories
+  getCategories() {
+    return this.request('/categories');
+  }
+
+  createCategory(data) {
+    return this.request('/categories', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  updateCategory(id, data) {
+    return this.request(`/categories/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  deleteCategory(id) {
+    return this.request(`/categories/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Anime
+  getAnime(page = 1, limit = 12, search = '', category = '', source = 'all') {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(category && { category }),
+      ...(source && source !== 'all' && { source }),
+    });
+    return this.request(`/anime?${params}`);
+  }
+
+  getAnimeBySlug(slug) {
+    return this.request(`/anime/slug/${slug}`);
+  }
+
+  createAnime(formData) {
+    return this.request('/anime', {
+      method: 'POST',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  updateAnime(id, formData) {
+    return this.request(`/anime/${id}`, {
+      method: 'PUT',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  deleteAnime(id) {
+    return this.request(`/anime/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Votes (by slug; token sent when logged in so vote is per-user)
+  getVotes(slug) {
+    return this.request(`/votes/${encodeURIComponent(slug)}`);
+  }
+
+  submitVote(slug, vote_type) {
+    return this.request('/votes', {
+      method: 'POST',
+      body: { slug, vote_type },
+    });
+  }
+
+  getEpisodeReactions(episodeSlug) {
+    return this.request(`/episode-reactions/${encodeURIComponent(episodeSlug)}`);
+  }
+
+  submitEpisodeReaction(episodeSlug, reaction_type) {
+    return this.request('/episode-reactions', {
+      method: 'POST',
+      body: { slug: episodeSlug, reaction_type },
+    });
+  }
+
+  voteAnime(animeId, type) {
+    return this.request('/votes', {
+      method: 'POST',
+      body: { anime_id: animeId, vote_type: type },
+    });
+  }
+
+  // Episodes
+  getEpisodes(animeId) {
+    return this.request(`/episodes/anime/${animeId}`);
+  }
+
+  createEpisode(animeId, formData) {
+    return this.request('/episodes', {
+      method: 'POST',
+      body: { anime_id: animeId, ...formData }
+    });
+  }
+
+  updateEpisode(episodeId, formData) {
+    return this.request(`/episodes/${episodeId}`, {
+      method: 'PUT',
+      body: formData,
+    });
+  }
+
+  deleteEpisode(episodeId) {
+    return this.request(`/episodes/${episodeId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Episode Videos / Sources
+  getEpisodeVideos(episodeId) {
+    return this.request(`/episodes/${episodeId}/videos`);
+  }
+
+  addEpisodeVideo(formData) {
+    return this.request('/episodes/videos', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  deleteEpisodeVideo(videoId) {
+    return this.request(`/episodes/videos/${videoId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Otakudesu Scraper
+  getOtakudesuList() {
+    return this.request('/otakudesu/list');
+  }
+
+  scrapeOtakudesuDetail(url) {
+    return this.request('/otakudesu/scrape-detail', {
+      method: 'POST',
+      body: { url },
+    });
+  }
+
+  scrapeOtakudesuEpisodeVideos(url, episodeId) {
+    return this.request('/otakudesu/scrape-videos', {
+      method: 'POST',
+      body: { url, episodeId },
+    });
+  }
+
+  // Admin: Ikiru sync
+  syncIkiruLatest(body = {}) {
+    return this.request('/admin/ikiru-sync/latest', {
+      method: 'POST',
+      body,
+    });
+  }
+
+  syncIkiruProject(body = {}) {
+    return this.request('/admin/ikiru-sync/project', {
+      method: 'POST',
+      body,
+    });
+  }
+
+  getIkiruSyncFeed(type = 'latest', page = 1) {
+    const params = new URLSearchParams({
+      type: String(type || 'latest'),
+      page: String(page || 1),
+    });
+    return this.request(`/admin/ikiru-sync/feed?${params.toString()}`);
+  }
+
+  getIkiruCloudflareCookiesMeta() {
+    return this.request('/admin/ikiru-sync/cloudflare-cookies');
+  }
+
+  putIkiruCloudflareCookies(cookies) {
+    return this.request('/admin/ikiru-sync/cloudflare-cookies', {
+      method: 'PUT',
+      body: { cookies },
+    });
+  }
+
+  syncIkiruSelected(slugs, body = {}) {
+    return this.request('/admin/ikiru-sync/selected', {
+      method: 'POST',
+      body: { slugs, ...body },
+    });
+  }
+
+  syncIkiruManga(slug, body = {}) {
+    return this.request(`/admin/ikiru-sync/manga/${encodeURIComponent(slug)}`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  // Init + return chapter queue plan (does upsert manga cover/meta).
+  syncIkiruMangaInit(slug, body = {}) {
+    return this.request(`/admin/ikiru-sync/manga/${encodeURIComponent(slug)}/init`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  // Sync a single chapter (optionally images) for progress queue.
+  syncIkiruChapter(slug, episodeSlug, body = {}) {
+    return this.request(
+      `/admin/ikiru-sync/manga/${encodeURIComponent(slug)}/chapter/${encodeURIComponent(
+        episodeSlug
+      )}`,
+      {
+        method: 'POST',
+        body,
+      }
+    );
+  }
+
+  syncIkiruChapterImages(mangaSlug, episodeSlug, body = {}) {
+    return this.request(
+      `/admin/ikiru-sync/manga/${encodeURIComponent(mangaSlug)}/chapter/${encodeURIComponent(
+        episodeSlug
+      )}/images`,
+      {
+        method: 'POST',
+        body,
+      }
+    );
+  }
+
+  // Admin: Apanime sync
+  syncApanimeLatest(type = 'manga', body = {}) {
+    return this.request('/admin/apanime-sync/latest', {
+      method: 'POST',
+      body: { type, ...body },
+    });
+  }
+
+  getApanimeSyncFeed(type = 'manga', page = 1) {
+    const params = new URLSearchParams({
+      type: String(type || 'manga'),
+      page: String(page || 1),
+    });
+    return this.request(`/admin/apanime-sync/feed?${params.toString()}`);
+  }
+
+  syncApanimeSelected(slugs, body = {}) {
+    return this.request('/admin/apanime-sync/selected', {
+      method: 'POST',
+      body: { slugs, ...body },
+    });
+  }
+
+  syncApanimeManga(slug, body = {}) {
+    return this.request(`/admin/apanime-sync/manga/${encodeURIComponent(slug)}`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  syncApanimeMangaInit(slug, body = {}) {
+    return this.request(`/admin/apanime-sync/manga/${encodeURIComponent(slug)}/init`, {
+      method: 'POST',
+      body,
+    });
+  }
+
+  syncApanimeChapter(slug, episodeSlug, body = {}) {
+    return this.request(
+      `/admin/apanime-sync/manga/${encodeURIComponent(slug)}/chapter/${encodeURIComponent(
+        episodeSlug
+      )}`,
+      {
+        method: 'POST',
+        body,
+      }
+    );
+  }
+
+  syncApanimeChapterImages(mangaSlug, episodeSlug, body = {}) {
+    return this.request(
+      `/admin/apanime-sync/manga/${encodeURIComponent(mangaSlug)}/chapter/${encodeURIComponent(
+        episodeSlug
+      )}/images`,
+      {
+        method: 'POST',
+        body,
+      }
+    );
+  }
+
+  // Ads
+  getAds() {
+    return this.request('/ads');
+  }
+
+  createAd(formData) {
+    return this.request('/ads', {
+      method: 'POST',
+      headers: {},
+      body: formData,
+    });
+  }
+
+  updateAd(id, formData) {
+    // Use POST with _method override so multipart form-data
+    // is parsed correctly by the backend for updates
+    const fd = new FormData();
+    // Copy existing fields
+    if (formData instanceof FormData) {
+      for (const [key, value] of formData.entries()) {
+        fd.append(key, value);
+      }
+    }
+    fd.append('_method', 'PUT');
+
+    return this.request(`/ads/${id}`, {
+      method: 'POST',
+      headers: {},
+      body: fd,
+    });
+  }
+
+  deleteAd(id) {
+    return this.request(`/ads/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  getSettings() {
+    return this.request('/settings');
+  }
+
+  updateSettings(body) {
+    return this.request('/settings', {
+      method: 'PUT',
+      body,
+    });
+  }
+
+  // Helper function for SSE streaming
+  _handleSSEStream = (url, body, onProgress) => {
+    return new Promise((resolve, reject) => {
+      const token = this.getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      };
+
+      // Add auth token if available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let currentEvent = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                // Check if we have any remaining data in buffer
+                if (buffer.trim()) {
+                  const lines = buffer.split('\n');
+                  for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                      try {
+                        const data = JSON.parse(line.substring(6));
+                        if (onProgress) onProgress(data);
+                      } catch {
+                        // Ignore parse errors
+                      }
+                    }
+                  }
+                }
+                break;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                if (line.startsWith('event: ')) {
+                  currentEvent = line.substring(7).trim();
+                } else if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.substring(6));
+
+                    // Call progress callback
+                    if (onProgress) {
+                      onProgress(data);
+                    }
+
+                    // Check for completion or error
+                    if (currentEvent === 'complete') {
+                      // Call progress one more time with final data
+                      if (onProgress) {
+                        onProgress(data);
+                      }
+                      resolve(data);
+                      return;
+                    }
+                    if (data.status === 'complete') {
+                      // Also handle complete status in progress data
+                      if (onProgress) {
+                        onProgress(data);
+                      }
+                      resolve(data);
+                      return;
+                    }
+                    if (currentEvent === 'error' || data.error) {
+                      if (onProgress) {
+                        onProgress(data);
+                      }
+                      reject(new Error(data.error || 'Sync failed'));
+                      return;
+                    }
+                  } catch (e) {
+                    console.warn('Failed to parse SSE data:', e);
+                  }
+                } else if (line.trim() === '') {
+                  // Empty line indicates end of event, reset currentEvent
+                  currentEvent = '';
+                }
+              }
+            }
+
+            // If we reach here without resolve/reject, resolve with last data
+            resolve({ message: 'Sync completed' });
+          } catch (streamError) {
+            reject(streamError);
+          } finally {
+            reader.releaseLock();
+          }
+        })
+        .catch(reject);
+    });
+  }
+
+  // WestManga Full Sync (with chapters and images) - with progress callback support
+  syncWestManga = (page = 1, limit = 25, onProgress = null) => {
+    // If onProgress callback is provided, use SSE streaming
+    if (onProgress) {
+      const url = `${API_BASE_URL}/westmanga/sync`;
+      return this._handleSSEStream(url, { page, limit }, onProgress);
+    } else {
+      // Fallback to regular request
+      return this.request('/westmanga/sync', {
+        method: 'POST',
+        body: { page, limit },
+      });
+    }
+  };
+
+  // WestManga Manga-Only Sync (no chapters/images) - with progress callback support
+  syncWestMangaOnly = (page = 1, limit = 25, onProgress = null) => {
+    // If onProgress callback is provided, use SSE streaming
+    if (onProgress) {
+      const url = `${API_BASE_URL}/westmanga/sync-manga-only`;
+      return this._handleSSEStream(url, { page, limit }, onProgress);
+    } else {
+      // Fallback to regular request
+      return this.request('/westmanga/sync-manga-only', {
+        method: 'POST',
+        body: { page, limit },
+      });
+    }
+  };
+
+  // WestManga Manga + Chapters Sync (no images) - with progress callback support
+  syncWestMangaChapters = (page = 1, limit = 25, onProgress = null) => {
+    // If onProgress callback is provided, use SSE streaming
+    if (onProgress) {
+      const url = `${API_BASE_URL}/westmanga/sync-manga-chapters`;
+      return this._handleSSEStream(url, { page, limit }, onProgress);
+    } else {
+      // Fallback to regular request
+      return this.request('/westmanga/sync-manga-chapters', {
+        method: 'POST',
+        body: { page, limit },
+      });
+    }
+  };
+
+  // Sync a single manga from WestManga to database by slug
+  syncMangaBySlug(slug) {
+    return this.request(`/westmanga/sync-manga/${encodeURIComponent(slug)}`, {
+      method: 'POST',
+    });
+  }
+
+  // Sync chapters for a specific manga by slug (WestManga only)
+  syncChaptersBySlug(slug) {
+    return this.request(`/westmanga/sync-chapters/${encodeURIComponent(slug)}`, {
+      method: 'POST',
+    });
+  }
+
+  // Search Manga
+  searchManga(query, source = 'all') {
+    const params = new URLSearchParams({
+      query,
+      source,
+    });
+    return this.request(`/manga/search?${params}`);
+  }
+
+  // Dashboard Stats
+  getDashboardStats() {
+    return this.request('/dashboard/stats');
+  }
+
+  // Featured Items
+  getFeaturedItems(type = null, active = null) {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (active !== null) params.append('active', active.toString());
+    const queryString = params.toString();
+    return this.request(`/featured-items${queryString ? `?${queryString}` : ''}`);
+  }
+
+  searchFeaturedManga(query, limit = 50) {
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(limit),
+    });
+    return this.request(`/featured-items/search?${params}`);
+  }
+
+  createFeaturedItem(data) {
+    return this.request('/featured-items', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  updateFeaturedItem(id, data) {
+    return this.request(`/featured-items/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  deleteFeaturedItem(id) {
+    return this.request(`/featured-items/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Contact Info
+  getContactInfo(active = null) {
+    const params = new URLSearchParams();
+    if (active !== null) params.append('active', active.toString());
+    const queryString = params.toString();
+    return this.request(`/contact-info${queryString ? `?${queryString}` : ''}`);
+  }
+
+  createContactInfo(data) {
+    return this.request('/contact-info', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  updateContactInfo(id, data) {
+    return this.request(`/contact-info/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  deleteContactInfo(id) {
+    return this.request(`/contact-info/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Contents (Manga List with filters)
+  getContents(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params.q) queryParams.append('q', params.q);
+    if (params.genre) {
+      if (Array.isArray(params.genre)) {
+        params.genre.forEach(g => queryParams.append('genre[]', g));
+      } else {
+        queryParams.append('genre', params.genre);
+      }
+    }
+    if (params.status) queryParams.append('status', params.status);
+    if (params.country) queryParams.append('country', params.country);
+    if (params.type) queryParams.append('type', params.type);
+    if (params.orderBy) queryParams.append('orderBy', params.orderBy);
+    if (params.project) queryParams.append('project', params.project);
+    if (params.popularWindow) queryParams.append('popularWindow', params.popularWindow);
+
+    const queryString = queryParams.toString();
+    return this.request(`/contents${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // R2 Manga Migration
+  getMigrationManga(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.status) queryParams.append('status', params.status);
+    const queryString = queryParams.toString();
+    return this.request(`/admin/migration/manga${queryString ? `?${queryString}` : ''}`);
+  }
+
+  startMigration(animeIds) {
+    return this.request('/admin/migration/start', {
+      method: 'POST',
+      body: JSON.stringify({ animeIds }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  getMigrationStatus(taskId) {
+    return this.request(`/admin/migration/status/${taskId}`);
+  }
+
+  abortMigration(taskId) {
+    return this.request(`/admin/migration/abort/${taskId}`, {
+      method: 'POST',
+    });
+  }
+}
+
+export const apiClient = new APIClient();
+
+export function safeParseDate(value) {
+  if (value == null || value === '') return null;
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+
+  const s = String(value).trim();
+  if (!s) return null;
+
+  // Handles "YYYY-MM-DD HH:mm:ss" -> replace space with 'T'
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+    const d = new Date(s.replace(' ', 'T'));
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export function formatToLocaleString(value, isDateOnly = false) {
+  const d = safeParseDate(value);
+  if (!d) return '-';
+  return isDateOnly ? d.toLocaleDateString('id-ID') : d.toLocaleString('id-ID');
+}
+
+export function formatToInputString(value) {
+  const d = safeParseDate(value);
+  if (!d) return '';
+  try {
+    return d.toISOString().slice(0, 16);
+  } catch {
+    return '';
+  }
+}
