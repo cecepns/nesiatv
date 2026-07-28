@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { createPortal } from "react-dom";
 import { X, ChevronDown, ChevronLeft, ChevronRight, Filter, SlidersHorizontal, LayoutGrid, List } from "lucide-react";
 import LazyImage from "../components/LazyImage";
 import AdBanner from "../components/AdBanner";
@@ -64,6 +65,31 @@ const Content = () => {
   const [showMobileFilterModal, setShowMobileFilterModal] = useState(false);
   const [cardLayout, setCardLayout] = useState("vertical");
 
+  const selectedGenres = useMemo(() => {
+    const genreIdParams = searchParams
+      .getAll("genreId")
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id));
+
+    if (genreIdParams.length > 0) {
+      return genreIdParams;
+    }
+
+    const genreNameParams = searchParams.getAll("genre");
+    if (genreNameParams.length > 0 && genres.length > 0) {
+      return genreNameParams
+        .map((name) => {
+          const genre = genres.find(
+            (g) => g.name.toLowerCase() === name.toLowerCase(),
+          );
+          return genre ? genre.id : null;
+        })
+        .filter((id) => id !== null);
+    }
+
+    return [];
+  }, [searchParams, genres]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedStatus !== "All") count++;
@@ -95,9 +121,8 @@ const Content = () => {
       try {
         const response = await fetch(`${API_BASE_URL}/contents/genres`);
         const data = await response.json();
-        if (data.status && data.data) {
-          setGenres(data.data);
-        }
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        setGenres(list);
       } catch (error) {
         console.error("Error fetching genres:", error);
       } finally {
@@ -107,30 +132,7 @@ const Content = () => {
     fetchGenres();
   }, []);
 
-  const selectedGenres = useMemo(() => {
-    const genreIdParams = searchParams
-      .getAll("genreId")
-      .map((id) => Number(id))
-      .filter((id) => Number.isInteger(id));
 
-    if (genreIdParams.length > 0) {
-      return genreIdParams;
-    }
-
-    const genreNameParams = searchParams.getAll("genre");
-    if (genreNameParams.length > 0 && genres.length > 0) {
-      return genreNameParams
-        .map((name) => {
-          const genre = genres.find(
-            (g) => g.name.toLowerCase() === name.toLowerCase(),
-          );
-          return genre ? genre.id : null;
-        })
-        .filter((id) => id !== null);
-    }
-
-    return [];
-  }, [searchParams, genres]);
 
   const updateSearchParams = useCallback(
     (updater) => {
@@ -531,7 +533,7 @@ const Content = () => {
               onClick={() => setCardLayout("vertical")}
               className={`p-2 rounded-xl transition-all ${
                 cardLayout === "vertical"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  ? "bg-sky-600 text-white shadow-md shadow-sky-600/30"
                   : "text-slate-400 hover:text-slate-200"
               }`}
               aria-label="Tampilan Grid"
@@ -544,7 +546,7 @@ const Content = () => {
               onClick={() => setCardLayout("horizontal")}
               className={`p-2 rounded-xl transition-all ${
                 cardLayout === "horizontal"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  ? "bg-sky-600 text-white shadow-md shadow-sky-600/30"
                   : "text-slate-400 hover:text-slate-200"
               }`}
               aria-label="Tampilan Baris"
@@ -564,12 +566,12 @@ const Content = () => {
           >
             <Filter className="w-5 h-5" />
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-slate-950">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-sky-600 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-slate-950">
                 {activeFilterCount}
               </span>
             )}
           </button>
-        </div>v>
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar - Desktop Only */}
@@ -838,10 +840,20 @@ const Content = () => {
                     <div
                       key={manga.id}
                       onClick={() => navigate(`/anime/${manga.slug}`)}
-                      className="bg-white dark:bg-white/[0.06] dark:border dark:border-white/10 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                      className={`bg-white dark:bg-white/[0.06] dark:border dark:border-white/10 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer ${
+                        cardLayout === "horizontal"
+                          ? "flex flex-row gap-3 sm:gap-4 p-3"
+                          : "flex flex-col"
+                      }`}
                     >
                       {/* Cover Image */}
-                      <div className="relative aspect-[3/4] overflow-hidden">
+                      <div
+                        className={
+                          cardLayout === "horizontal"
+                            ? "relative w-28 sm:w-36 shrink-0 aspect-[3/4] overflow-hidden rounded-lg"
+                            : "relative aspect-[3/4] overflow-hidden"
+                        }
+                      >
                         <LazyImage
                           src={getImageUrl(manga.cover || manga.thumbnail)}
                           alt={manga.title}
@@ -849,67 +861,48 @@ const Content = () => {
                           wrapperClassName="w-full h-full"
                         />
 
-                        {/* Gradient Overlay */}
-                        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" /> */}
-
-                        {/* Country Flag */}
-                        {/* <div className="absolute top-2 right-2 text-2xl bg-white/90 dark:bg-primary-900/90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                          {countryFlags[manga.country_id] || "🌍"}
-                        </div> */}
-
-                        {/* Color Badge */}
-                        {/* {manga.color && (
-                          <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-md text-xs font-bold flex items-center space-x-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
-                            </svg>
-                            <span className="block text-[10px] md:text-sm">
-                              COLOR
-                            </span>
-                          </div>
-                        )} */}
-
                         {/* Rating Badge */}
                         {manga.rating > 0 && (
-                          <div className="absolute top-2 left-2 h-8 w-8 rounded-full bg-yellow-500/95 text-white shadow-lg backdrop-blur-sm flex items-center justify-center">
+                          <div className="absolute top-2 left-2 h-7 w-7 rounded-full bg-yellow-500/95 text-white shadow-lg backdrop-blur-sm flex items-center justify-center">
                             <span className="text-[11px] font-bold leading-none">
                               {Number(manga.rating).toFixed(1)}
                             </span>
                           </div>
                         )}
-
-                        {/* Hot Badge */}
-                        {/* {manga.hot && (
-                          <div className="absolute bottom-2 left-2 bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-1">
-                            <span className="text-white text-xs font-bold">HOT</span>
-                          </div>
-                        )} */}
                       </div>
 
                       {/* Info Section */}
-                      <div className="p-3 flex flex-col h-[192px]">
+                      <div
+                        className={
+                          cardLayout === "horizontal"
+                            ? "flex-1 min-w-0 flex flex-col justify-between py-0.5"
+                            : "p-3 flex flex-col h-[192px]"
+                        }
+                      >
                         {/* Title */}
-                        {!!manga.hot && (
-                          <div className="mb-1 max-w-fit bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-1">
-                            <span className="text-white text-xs font-bold">
-                              HOT
-                            </span>
+                        <div>
+                          {!!manga.hot && (
+                            <div className="mb-1 max-w-fit bg-red-500/90 backdrop-blur-sm rounded-full px-2 py-0.5">
+                              <span className="text-white text-[10px] font-bold">
+                                HOT
+                              </span>
+                            </div>
+                          )}
+                          <div className={cardLayout === "horizontal" ? "mb-2" : "min-h-[2.75rem] md:min-h-[3rem] mb-2 flex items-center"}>
+                            <Link
+                              to={`/anime/${manga.slug}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block w-full"
+                            >
+                              <h3 className="font-bold text-xs sm:text-sm line-clamp-2 text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors leading-snug">
+                                {manga.title}
+                              </h3>
+                            </Link>
                           </div>
-                        )}
-                        <div className="min-h-[2.75rem] md:min-h-[3rem] mb-2 flex items-center">
-                          <Link
-                            to={`/anime/${manga.slug}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="block w-full"
-                          >
-                            <h3 className="font-bold text-xs md:text-sm line-clamp-2 text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                              {manga.title}
-                            </h3>
-                          </Link>
                         </div>
 
                         {(manga.lastChapters?.length > 0 || manga.last_episodes?.length > 0) ? (
-                          <div className="space-y-2 mb-1 mt-auto">
+                          <div className="space-y-1.5 mt-auto">
                             {(manga.lastChapters || manga.last_episodes).slice(0, 3).map((chapter) => (
                               <ChapterAccessLink
                                 key={chapter.slug || chapter.id}
@@ -922,7 +915,7 @@ const Content = () => {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-500 dark:text-gray-500 mb-1 mt-auto">
+                          <div className="text-xs text-slate-400 mt-auto font-medium">
                             Detail Anime
                           </div>
                         )}
@@ -950,9 +943,9 @@ const Content = () => {
           </div>
         </div>
       </div>
-      {/* Mobile Bottom Sheet Filter Modal */}
-      {showMobileFilterModal && (
-        <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-slate-950/80 backdrop-blur-sm lg:hidden animate-in fade-in duration-200">
+      {/* Mobile Bottom Sheet Filter Modal (Portal to body for top z-index) */}
+      {showMobileFilterModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex flex-col justify-end bg-slate-950/80 backdrop-blur-sm lg:hidden animate-in fade-in duration-200">
           <div
             className="fixed inset-0"
             onClick={() => setShowMobileFilterModal(false)}
@@ -962,7 +955,7 @@ const Content = () => {
             {/* Top Handle & Title */}
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
+                <SlidersHorizontal className="w-5 h-5 text-sky-400" />
                 <h3 className="text-base font-bold text-white">Filter & Urutkan</h3>
               </div>
               <button
@@ -986,7 +979,7 @@ const Content = () => {
                       onClick={() => setStatusFilter(st)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedStatus === st
-                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1007,7 +1000,7 @@ const Content = () => {
                       onClick={() => setTypeFilter(tp.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedType === tp.value
-                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1028,7 +1021,7 @@ const Content = () => {
                       onClick={() => setProjectFilter(opt.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedProject === opt.value
-                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1049,7 +1042,7 @@ const Content = () => {
                       onClick={() => setOrderFilter(ord)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedOrder === ord
-                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1063,23 +1056,29 @@ const Content = () => {
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Genre</h4>
                 <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1.5 bg-slate-950/40 rounded-xl border border-slate-800 custom-scrollbar">
-                  {genres.map((g) => {
-                    const isChecked = selectedGenres.includes(g.id);
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGenre(g.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
-                          isChecked
-                            ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
-                            : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {g.name}
-                      </button>
-                    );
-                  })}
+                  {genresLoading ? (
+                    <div className="text-xs text-slate-400 py-2 px-1">Memuat genre...</div>
+                  ) : genres.length === 0 ? (
+                    <div className="text-xs text-slate-500 py-2 px-1">Tidak ada genre</div>
+                  ) : (
+                    genres.map((g) => {
+                      const isChecked = selectedGenres.includes(g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => toggleGenre(g.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                            isChecked
+                              ? "bg-sky-600/40 border-sky-500 text-sky-200"
+                              : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          {g.name}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -1099,13 +1098,14 @@ const Content = () => {
               <button
                 type="button"
                 onClick={() => setShowMobileFilterModal(false)}
-                className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30"
+                className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition shadow-lg shadow-sky-600/30"
               >
                 Terapkan
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <LiveChatWidget />

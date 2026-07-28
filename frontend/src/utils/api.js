@@ -1,8 +1,8 @@
 
-export const API_BASE_URL = 'http://localhost:3001/api';
-export const API_BASE_URL_WITHOUT_API = 'http://localhost:3001/';
-// export const API_BASE_URL = 'https://api-be.nesiatv.my.id/api';
-// export const API_BASE_URL_WITHOUT_API = 'https://api-be.nesiatv.my.id/';
+// export const API_BASE_URL = 'http://localhost:3001/api';
+// export const API_BASE_URL_WITHOUT_API = 'http://localhost:3001/';
+export const API_BASE_URL = 'https://api-be.nesiatv.my.id/api';
+export const API_BASE_URL_WITHOUT_API = 'https://api-be.nesiatv.my.id/';
 
 /** Origin for static files (no trailing slash). Same host as API, path /uploads is served by backend. */
 const STATIC_ORIGIN = API_BASE_URL_WITHOUT_API.replace(/\/+$/, '');
