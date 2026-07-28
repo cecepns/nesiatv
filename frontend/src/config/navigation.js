@@ -5,7 +5,7 @@ export const mainNavigationItems = [
   { id: 'home', label: 'Home', icon: HomeIcon, path: '/' },
   { id: 'jadwal', label: 'Jadwal', icon: CalendarDays, path: '/jadwal' },
   { id: 'library', label: 'Library', icon: FolderIcon, path: '/library' },
-  { id: 'genre', label: 'Genre', icon: Tags, path: '/content' },
+  { id: 'genre', label: 'Anime', icon: Tags, path: '/content' },
   { id: 'account', label: 'Akun', icon: UserCircle, path: '/akun', comingSoon: false },
 ];
 
