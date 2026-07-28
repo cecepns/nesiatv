@@ -117,7 +117,7 @@ function MobileFeaturedMeta({ item, onReadLatest }) {
         className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-8 py-3 text-sm font-bold text-gray-900 shadow-md transition-colors hover:bg-amber-300"
       >
         <Play className="h-4 w-4 shrink-0 fill-current text-gray-900" aria-hidden />
-        Read now
+        Mulai Nonton
       </button>
     </div>
   );

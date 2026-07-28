@@ -533,7 +533,7 @@ const Content = () => {
               onClick={() => setCardLayout("vertical")}
               className={`p-2 rounded-xl transition-all ${
                 cardLayout === "vertical"
-                  ? "bg-sky-600 text-white shadow-md shadow-sky-600/30"
+                  ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
                   : "text-slate-400 hover:text-slate-200"
               }`}
               aria-label="Tampilan Grid"
@@ -546,7 +546,7 @@ const Content = () => {
               onClick={() => setCardLayout("horizontal")}
               className={`p-2 rounded-xl transition-all ${
                 cardLayout === "horizontal"
-                  ? "bg-sky-600 text-white shadow-md shadow-sky-600/30"
+                  ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
                   : "text-slate-400 hover:text-slate-200"
               }`}
               aria-label="Tampilan Baris"
@@ -560,13 +560,13 @@ const Content = () => {
           <button
             type="button"
             onClick={() => setShowMobileFilterModal(true)}
-            className="relative flex items-center justify-center p-3 rounded-2xl border border-slate-700/80 bg-slate-900 text-slate-200 hover:text-white shadow-md active:scale-95 transition"
+            className="relative flex items-center justify-center p-3 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-600/20 to-blue-700/20 text-indigo-400 hover:text-white shadow-md active:scale-95 transition"
             aria-label="Buka Filter"
             title="Filter"
           >
             <Filter className="w-5 h-5" />
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-sky-600 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-slate-950">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-slate-950">
                 {activeFilterCount}
               </span>
             )}

@@ -358,7 +358,7 @@ const Header = () => {
               <div className="relative flex-1 min-w-0">
                 <input
                   type="text"
-                  placeholder="Cari manga..."
+                  placeholder="cari anime..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchSubmit}
@@ -382,7 +382,7 @@ const Header = () => {
                 type="button"
                 onClick={submitFullSearch}
                 disabled={!searchQuery.trim()}
-                className="flex-shrink-0 px-3 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-medium transition-colors"
+                className="flex-shrink-0 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-semibold shadow-md shadow-indigo-600/30 transition-colors"
               >
                 Cari
               </button>

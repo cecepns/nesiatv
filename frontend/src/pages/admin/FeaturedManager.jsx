@@ -149,24 +149,24 @@ const FeaturedManager = () => {
 
   const handleSyncChapters = async (item) => {
     const manga = getAnimeFromItem(item);
-    
+
     // Only allow sync for WestManga manga (is_input_manual = false)
     if (item.is_input_manual) {
       alert('Sync chapters hanya untuk manga dari WestManga');
       return;
     }
-    
+
     if (!manga.slug) {
       alert('Slug manga tidak ditemukan');
       return;
     }
-    
+
     if (!confirm(`Apakah Anda yakin ingin sync chapters untuk "${manga.title}"?`)) {
       return;
     }
-    
+
     setSyncingChapters(prev => ({ ...prev, [manga.slug]: true }));
-    
+
     try {
       const result = await apiClient.syncIkiruManga(manga.slug, { mode: 'delta' });
       alert(
@@ -238,11 +238,10 @@ const FeaturedManager = () => {
               setSelectedType(type.value);
               setNewItem(prev => ({ ...prev, featured_type: type.value }));
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedType === type.value
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedType === type.value
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
+              }`}
           >
             {type.label}
           </button>
@@ -255,7 +254,7 @@ const FeaturedManager = () => {
           <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
             Tambah Featured Item - {featuredTypes.find(t => t.value === selectedType)?.label}
           </h4>
-          
+
           {/* Search Manga */}
           <form onSubmit={handleSearch} className="mb-4">
             <div className="flex gap-2">
@@ -265,7 +264,7 @@ const FeaturedManager = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari manga untuk ditambahkan..."
+                  placeholder="cari anime untuk ditambahkan..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -307,11 +306,10 @@ const FeaturedManager = () => {
                   <div
                     key={manga.id}
                     onClick={() => handleSelectManga(manga)}
-                    className={`cursor-pointer border-2 rounded-lg p-2 transition-all ${
-                      selectedManga?.slug === manga.slug
+                    className={`cursor-pointer border-2 rounded-lg p-2 transition-all ${selectedManga?.slug === manga.slug
                         ? 'border-primary-500 bg-primary-50 dark:bg-primary-900'
                         : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                    }`}
+                      }`}
                   >
                     <div className="aspect-[3/4] rounded overflow-hidden mb-2 bg-gray-100 dark:bg-gray-800">
                       {(manga.cover || manga.thumbnail) && (
@@ -386,8 +384,8 @@ const FeaturedManager = () => {
                 value={newItem.display_order === null || newItem.display_order === undefined ? '' : newItem.display_order}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setNewItem(prev => ({ 
-                    ...prev, 
+                  setNewItem(prev => ({
+                    ...prev,
                     display_order: value === '' ? null : (parseInt(value) || 0)
                   }));
                 }}
@@ -502,8 +500,8 @@ const FeaturedManager = () => {
                             value={editingItem.display_order === null || editingItem.display_order === undefined ? '' : editingItem.display_order}
                             onChange={(e) => {
                               const value = e.target.value;
-                              setEditingItem(prev => ({ 
-                                ...prev, 
+                              setEditingItem(prev => ({
+                                ...prev,
                                 display_order: value === '' ? null : (parseInt(value) || 0)
                               }));
                             }}
@@ -545,11 +543,10 @@ const FeaturedManager = () => {
                             />
                           </label>
                         ) : (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.is_active
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.is_active
                               ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                          }`}>
+                            }`}>
                             {item.is_active ? 'Aktif' : 'Nonaktif'}
                           </span>
                         )}
@@ -580,9 +577,8 @@ const FeaturedManager = () => {
                                 <button
                                   onClick={() => handleSyncChapters(item)}
                                   disabled={syncingChapters[getAnimeFromItem(item).slug]}
-                                  className={`text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 ${
-                                    syncingChapters[getAnimeFromItem(item).slug] ? 'opacity-50 cursor-not-allowed' : ''
-                                  }`}
+                                  className={`text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 ${syncingChapters[getAnimeFromItem(item).slug] ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
                                   title="Sync Chapters dari WestManga"
                                 >
                                   <RefreshCw className={`h-4 w-4 ${syncingChapters[getAnimeFromItem(item).slug] ? 'animate-spin' : ''}`} />

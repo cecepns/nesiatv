@@ -133,20 +133,20 @@ const MangaManager = () => {
       // Validate file type before compression
       const allowedTypes = /jpeg|jpg|png|gif|webp/i;
       const fileExtension = file.name.split('.').pop().toLowerCase();
-      
+
       if (!allowedTypes.test(fileExtension) || !allowedTypes.test(file.type)) {
         alert('Format file tidak didukung. Gunakan gambar dengan format JPEG, PNG, GIF, atau WebP.');
         return;
       }
-      
+
       const compressed = await compressImage(file);
-      
+
       // Convert Blob to File with proper metadata for FormData
       // Compressor.js returns a Blob, but multer needs a File with name and type
       // Preserve original file name and extension
       const originalName = file.name;
       const originalType = file.type;
-      
+
       // Determine MIME type from file extension if type is missing
       let mimeType = originalType || compressed.type;
       if (!mimeType) {
@@ -160,7 +160,7 @@ const MangaManager = () => {
         };
         mimeType = mimeMap[ext] || 'image/jpeg';
       }
-      
+
       const compressedFile = new File(
         [compressed],
         originalName,
@@ -169,7 +169,7 @@ const MangaManager = () => {
           lastModified: Date.now()
         }
       );
-      
+
       if (type === "thumbnail") {
         setThumbnailFile(compressedFile);
       } else {
@@ -204,7 +204,7 @@ const MangaManager = () => {
 
     // Append genre_ids as JSON array for multiple categories
     submitData.append("genre_ids", JSON.stringify(formData.category_ids));
-    
+
     // Append alternative_name, country_id, content_type, status, rating, and color
     if (formData.alternative_name) {
       submitData.append("alternative_name", formData.alternative_name);
@@ -273,8 +273,8 @@ const MangaManager = () => {
       item.genres && item.genres.length > 0
         ? item.genres.map((g) => g.id)
         : item.category_id
-        ? [item.category_id]
-        : [];
+          ? [item.category_id]
+          : [];
 
     setFormData({
       title: item.title,
@@ -550,7 +550,7 @@ const MangaManager = () => {
 
   const handleDrop = async (e, episodeId, imageId) => {
     e.preventDefault();
-    
+
     if (!draggedImage || draggedImage.episodeId !== episodeId || draggedImage.imageId === imageId) {
       setDraggedImage(null);
       setDraggedOverImage(null);
@@ -645,7 +645,7 @@ const MangaManager = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari manga di database..."
+              placeholder="cari anime di database..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -1059,228 +1059,224 @@ const MangaManager = () => {
               </div>
 
               <>
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleBatchToggleLogin(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                        title="Kunci semua episode agar wajib login untuk menonton"
-                      >
-                        <Lock className="w-3.5 h-3.5" />
-                        Kunci Semua (Wajib Login)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleBatchToggleLogin(false)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                        title="Buka semua episode agar publik dapat menonton tanpa login"
-                      >
-                        <Unlock className="w-3.5 h-3.5" />
-                        Buka Semua (Bebas)
-                      </button>
-                    </div>
-
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        setEditingChapter(null);
-                        setChapterFormData({
-                          title: "",
-                          chapter_number: "",
-                          release_mode: "immediate",
-                          scheduled_release_at: defaultScheduleDatetime(),
-                          requires_login: false,
-                        });
-                        setChapterCoverFile(null);
-                        setShowChapterForm(true);
-                      }}
-                      className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-xs font-semibold"
+                      type="button"
+                      onClick={() => handleBatchToggleLogin(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                      title="Kunci semua episode agar wajib login untuk menonton"
                     >
-                      <Plus className="h-4 w-4 mr-1.5" />
-                      Tambah Episode
+                      <Lock className="w-3.5 h-3.5" />
+                      Kunci Semua (Wajib Login)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBatchToggleLogin(false)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                      title="Buka semua episode agar publik dapat menonton tanpa login"
+                    >
+                      <Unlock className="w-3.5 h-3.5" />
+                      Buka Semua (Bebas)
                     </button>
                   </div>
 
-                  {/* Chapter List */}
-                  <div className="space-y-2 mb-4">
-                    {chapters.length === 0 ? (
-                      <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                        Belum ada episode / chapter
-                      </p>
-                    ) : (
-                      chapters.map((chapter) => (
-                        <div
-                          key={chapter.id}
-                          className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
-                        >
-                          <div className="flex items-center justify-between p-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h5 className="font-medium text-gray-900 dark:text-gray-100">
-                                  {chapter.title}
-                                </h5>
-                                {chapter.requires_login ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                                    <Lock className="w-3 h-3" /> Wajib Login
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                    <Unlock className="w-3 h-3" /> Bebas
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-                                Episode {chapter.chapter_number || chapter.number} •{" "}
-                                {chapter.image_count || 0} halaman
-                                {isFutureScheduled(chapter) ? (
-                                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                                    Jadwal: {toDatetimeLocalValue(chapter.scheduled_release_at).replace("T", " ")}
-                                  </span>
-                                ) : null}
-                              </p>
-                            </div>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleToggleEpisodeLogin(chapter)}
-                                className={`p-2 rounded transition-colors ${
-                                  chapter.requires_login
-                                    ? "bg-amber-600 hover:bg-amber-700 text-white"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                }`}
-                                title={chapter.requires_login ? "Status: Wajib Login (Klik untuk buka akses)" : "Status: Bebas Nonton (Klik untuk kunci wajib login)"}
-                              >
-                                {chapter.requires_login ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                              </button>
-                              <button
-                                onClick={() => handleToggleChapterImages(chapter.id)}
-                                className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-                                title="Lihat Gambar/Video"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedChapterForImages(chapter);
-                                  setChapterImages([]);
-                                  setShowImageUpload(true);
-                                }}
-                                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                                title="Upload Gambar"
-                              >
-                                <Upload className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleEditChapter(chapter)}
-                                className="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
-                                title="Edit"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteChapter(chapter.id)}
-                                className="p-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                                title="Hapus"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Expanded Images Section */}
-                          {expandedChapters[chapter.id] && (
-                            <div className="border-t border-gray-200 dark:border-gray-600 p-4">
-                              {loadingImages[chapter.id] ? (
-                                <div className="flex justify-center items-center py-8">
-                                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                                </div>
+                  <button
+                    onClick={() => {
+                      setEditingChapter(null);
+                      setChapterFormData({
+                        title: "",
+                        chapter_number: "",
+                        release_mode: "immediate",
+                        scheduled_release_at: defaultScheduleDatetime(),
+                        requires_login: false,
+                      });
+                      setChapterCoverFile(null);
+                      setShowChapterForm(true);
+                    }}
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-xs font-semibold"
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Tambah Episode
+                  </button>
+                </div>
+
+                {/* Chapter List */}
+                <div className="space-y-2 mb-4">
+                  {chapters.length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      Belum ada episode / chapter
+                    </p>
+                  ) : (
+                    chapters.map((chapter) => (
+                      <div
+                        key={chapter.id}
+                        className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
+                      >
+                        <div className="flex items-center justify-between p-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h5 className="font-medium text-gray-900 dark:text-gray-100">
+                                {chapter.title}
+                              </h5>
+                              {chapter.requires_login ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                  <Lock className="w-3 h-3" /> Wajib Login
+                                </span>
                               ) : (
-                                <>
-                                  {chapterImagesMap[chapter.id] &&
-                                  chapterImagesMap[chapter.id].length > 0 ? (
-                                    <div className="space-y-2">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                          Drag and drop gambar untuk mengubah urutan
-                                        </p>
-                                        {isReordering[chapter.id] && (
-                                          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                            <span>Menyimpan urutan...</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                        {chapterImagesMap[chapter.id].map((image) => {
-                                          const isDragged = draggedImage?.episodeId === chapter.id && draggedImage?.imageId === image.id;
-                                          const isDraggedOver = draggedOverImage?.episodeId === chapter.id && draggedOverImage?.imageId === image.id;
-                                          
-                                          return (
-                                            <div
-                                              key={image.id}
-                                              draggable
-                                              onDragStart={(e) => handleDragStart(e, chapter.id, image.id)}
-                                              onDragOver={(e) => handleDragOver(e, chapter.id, image.id)}
-                                              onDragLeave={handleDragLeave}
-                                              onDrop={(e) => handleDrop(e, chapter.id, image.id)}
-                                              onDragEnd={handleDragEnd}
-                                              className={`relative group aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-move transition-all ${
-                                                isDragged ? 'opacity-50 scale-95' : ''
-                                              } ${
-                                                isDraggedOver ? 'ring-2 ring-blue-500 scale-105 z-10' : ''
-                                              } ${
-                                                isReordering[chapter.id] ? 'pointer-events-none' : ''
-                                              }`}
-                                            >
-                                              <LazyImage
-                                                src={getImageUrl(image.image_path)}
-                                                alt={`Page ${image.page_number}`}
-                                                className="w-full h-full object-cover pointer-events-none"
-                                                wrapperClassName="w-full h-full"
-                                              />
-                                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2">
-                                                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all">
-                                                  <div className="p-2 bg-gray-800/80 text-white rounded-full">
-                                                    <GripVertical className="h-4 w-4" />
-                                                  </div>
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleDeleteChapterImage(chapter.id, image.id);
-                                                    }}
-                                                    className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all"
-                                                    title="Hapus Gambar"
-                                                  >
-                                                    <Trash2 className="h-4 w-4" />
-                                                  </button>
-                                                </div>
-                                              </div>
-                                              <div className="absolute top-0 left-0 bg-blue-600 text-white px-2 py-1 rounded-br-lg text-xs font-medium">
-                                                #{image.page_number}
-                                              </div>
-                                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                                <p className="text-white text-xs font-medium">
-                                                  Halaman {image.page_number}
-                                                </p>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                                      Belum ada gambar untuk chapter ini
-                                    </p>
-                                  )}
-                                </>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                  <Unlock className="w-3 h-3" /> Bebas
+                                </span>
                               )}
                             </div>
-                          )}
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                              Episode {chapter.chapter_number || chapter.number} •{" "}
+                              {chapter.image_count || 0} halaman
+                              {isFutureScheduled(chapter) ? (
+                                <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                  Jadwal: {toDatetimeLocalValue(chapter.scheduled_release_at).replace("T", " ")}
+                                </span>
+                              ) : null}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleToggleEpisodeLogin(chapter)}
+                              className={`p-2 rounded transition-colors ${chapter.requires_login
+                                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                              title={chapter.requires_login ? "Status: Wajib Login (Klik untuk buka akses)" : "Status: Bebas Nonton (Klik untuk kunci wajib login)"}
+                            >
+                              {chapter.requires_login ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                            </button>
+                            <button
+                              onClick={() => handleToggleChapterImages(chapter.id)}
+                              className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                              title="Lihat Gambar/Video"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedChapterForImages(chapter);
+                                setChapterImages([]);
+                                setShowImageUpload(true);
+                              }}
+                              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                              title="Upload Gambar"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditChapter(chapter)}
+                              className="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+                              title="Edit"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteChapter(chapter.id)}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </>
+
+                        {/* Expanded Images Section */}
+                        {expandedChapters[chapter.id] && (
+                          <div className="border-t border-gray-200 dark:border-gray-600 p-4">
+                            {loadingImages[chapter.id] ? (
+                              <div className="flex justify-center items-center py-8">
+                                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                              </div>
+                            ) : (
+                              <>
+                                {chapterImagesMap[chapter.id] &&
+                                  chapterImagesMap[chapter.id].length > 0 ? (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Drag and drop gambar untuk mengubah urutan
+                                      </p>
+                                      {isReordering[chapter.id] && (
+                                        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                                          <RefreshCw className="h-4 w-4 animate-spin" />
+                                          <span>Menyimpan urutan...</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                      {chapterImagesMap[chapter.id].map((image) => {
+                                        const isDragged = draggedImage?.episodeId === chapter.id && draggedImage?.imageId === image.id;
+                                        const isDraggedOver = draggedOverImage?.episodeId === chapter.id && draggedOverImage?.imageId === image.id;
+
+                                        return (
+                                          <div
+                                            key={image.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, chapter.id, image.id)}
+                                            onDragOver={(e) => handleDragOver(e, chapter.id, image.id)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, chapter.id, image.id)}
+                                            onDragEnd={handleDragEnd}
+                                            className={`relative group aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-move transition-all ${isDragged ? 'opacity-50 scale-95' : ''
+                                              } ${isDraggedOver ? 'ring-2 ring-blue-500 scale-105 z-10' : ''
+                                              } ${isReordering[chapter.id] ? 'pointer-events-none' : ''
+                                              }`}
+                                          >
+                                            <LazyImage
+                                              src={getImageUrl(image.image_path)}
+                                              alt={`Page ${image.page_number}`}
+                                              className="w-full h-full object-cover pointer-events-none"
+                                              wrapperClassName="w-full h-full"
+                                            />
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2">
+                                              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all">
+                                                <div className="p-2 bg-gray-800/80 text-white rounded-full">
+                                                  <GripVertical className="h-4 w-4" />
+                                                </div>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteChapterImage(chapter.id, image.id);
+                                                  }}
+                                                  className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all"
+                                                  title="Hapus Gambar"
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </button>
+                                              </div>
+                                            </div>
+                                            <div className="absolute top-0 left-0 bg-blue-600 text-white px-2 py-1 rounded-br-lg text-xs font-medium">
+                                              #{image.page_number}
+                                            </div>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                              <p className="text-white text-xs font-medium">
+                                                Halaman {image.page_number}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                                    Belum ada gambar untuk chapter ini
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             </div>
           </div>
         </div>
@@ -1605,24 +1601,23 @@ const MangaManager = () => {
                     <div className="flex flex-wrap gap-1">
                       {item.genres && item.genres.length > 0
                         ? item.genres.map((genre) => (
-                            <span
-                              key={genre.id}
-                              className="text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full"
-                            >
-                              {genre.name}
-                            </span>
-                          ))
+                          <span
+                            key={genre.id}
+                            className="text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full"
+                          >
+                            {genre.name}
+                          </span>
+                        ))
                         : item.category_name && (
-                            <span className="text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full">
-                              {item.category_name}
-                            </span>
-                          )}
+                          <span className="text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full">
+                            {item.category_name}
+                          </span>
+                        )}
                       <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          item.is_input_manual
+                        className={`text-xs px-2 py-1 rounded-full ${item.is_input_manual
                             ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
                             : "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                        }`}
+                          }`}
                       >
                         {item.is_input_manual ? "Manual" : "API"}
                       </span>
@@ -1632,13 +1627,13 @@ const MangaManager = () => {
                       {item.view || 0}
                     </div> */}
                   </div>
-                    <button
-                      onClick={() => handleOpenChapters(item)}
-                      className="mt-2 w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center justify-center"
-                    >
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      Kelola Episode
-                    </button>
+                  <button
+                    onClick={() => handleOpenChapters(item)}
+                    className="mt-2 w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center justify-center"
+                  >
+                    <BookOpen className="h-3 w-3 mr-1" />
+                    Kelola Episode
+                  </button>
                 </div>
               </div>
             ))}
@@ -1673,11 +1668,10 @@ const MangaManager = () => {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        currentPage === pageNum
+                      className={`px-4 py-2 rounded-lg transition-colors ${currentPage === pageNum
                           ? "bg-primary-600 text-white"
                           : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-                      }`}
+                        }`}
                     >
                       {pageNum}
                     </button>
