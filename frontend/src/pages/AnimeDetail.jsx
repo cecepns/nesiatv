@@ -244,12 +244,12 @@ const AnimeDetail = () => {
       </Helmet>
 
       {/* Top Sub-Navbar (Back & Home Icons Only) */}
-      <div className="bg-slate-950/90 border-b border-slate-800/80 backdrop-blur-md py-2.5 px-4 z-20">
+      <div className="sticky top-0 z-30 bg-slate-950/95 border-b border-slate-800/80 backdrop-blur-md py-2.5 px-4 shadow-xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
             type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Kembali"
+            onClick={() => navigate('/content')}
+            aria-label="Kembali ke Daftar Anime"
             className="flex items-center justify-center text-slate-300 hover:text-white transition p-2 rounded-xl bg-slate-900/80 border border-slate-800 hover:bg-slate-800/80"
           >
             <ArrowLeft className="w-5 h-5 text-indigo-400" />
