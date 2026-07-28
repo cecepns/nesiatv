@@ -15,7 +15,9 @@ import {
   Lock,
   LogIn,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  Heart
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, apiClient, getImageUrl } from '../utils/api';
@@ -23,7 +25,9 @@ import LazyImage from '../components/LazyImage';
 import CommentSection from '../components/CommentSection';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
+import ShareModal from '../components/ShareModal';
 import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
+import discordIcon from '../assets/discord.svg';
 
 const EpisodePlayer = () => {
   const { episodeSlug } = useParams();
@@ -34,6 +38,7 @@ const EpisodePlayer = () => {
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedDownloadId, setSelectedDownloadId] = useState('');
   const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
   const [userReaction, setUserReaction] = useState(null);
@@ -42,8 +47,8 @@ const EpisodePlayer = () => {
     if (!episodeSlug) return;
     apiClient.getEpisodeReactions(episodeSlug).then((res) => {
       if (res?.status && res?.data) {
-        setReactionCounts(res.data.counts || emptyReactionCounts());
-        setUserReaction(res.data.user_reaction || null);
+        setReactionCounts(res.data || emptyReactionCounts());
+        setUserReaction(res.userReaction || null);
       }
     }).catch(() => {});
   }, [episodeSlug]);
@@ -56,9 +61,12 @@ const EpisodePlayer = () => {
     }
     try {
       const res = await apiClient.submitEpisodeReaction(episodeSlug, reactionType);
-      if (res?.status && res?.data) {
-        setReactionCounts(res.data.counts || emptyReactionCounts());
-        setUserReaction(res.data.user_reaction || null);
+      if (res?.status) {
+        const reactionsData = await apiClient.getEpisodeReactions(episodeSlug);
+        if (reactionsData?.status && reactionsData?.data) {
+          setReactionCounts(reactionsData.data || emptyReactionCounts());
+          setUserReaction(reactionsData.userReaction || null);
+        }
         toast.success('Reaksi berhasil disimpan!');
       }
     } catch (err) {
@@ -150,13 +158,8 @@ const EpisodePlayer = () => {
   const prevEpisode = currentIndex > 0 ? sortedEpisodes[currentIndex - 1] : null;
   const nextEpisode = currentIndex < sortedEpisodes.length - 1 ? sortedEpisodes[currentIndex + 1] : null;
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link video berhasil disalin!');
-    } catch {
-      toast.error('Gagal menyalin tautan');
-    }
+  const handleShare = () => {
+    setShareModalOpen(true);
   };
 
   const handleEpisodeClick = (e, ep) => {
@@ -394,13 +397,74 @@ const EpisodePlayer = () => {
                 </button>
               </div>
 
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 px-4 py-2 rounded-lg text-xs font-bold transition"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Bagikan Video
+                </button>
+                <a
+                  href="https://discord.gg/dgC22PSm9h"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 text-rose-400 px-4 py-2 rounded-lg text-xs font-bold transition"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Lapor Error
+                </a>
+              </div>
+            </div>
+
+            {/* Community & Share Action Cards */}
+            <div className="space-y-3 mt-6">
               <button
+                type="button"
                 onClick={handleShare}
-                className="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 px-4 py-2 rounded-lg text-xs font-bold transition"
+                className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-slate-900 p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-slate-800/80"
               >
-                <Share2 className="w-4 h-4" />
-                Bagikan Video
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-inner">
+                  <Share2 className="h-6 w-6" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-bold text-white">Bagikan anime</p>
+                  <p className="text-xs text-slate-400">Salin tautan, WhatsApp, X, TikTok, Telegram</p>
+                </div>
+                <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300" aria-hidden />
               </button>
+
+              <a
+                href="https://discord.gg/dgC22PSm9h"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-slate-900 p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-slate-800/80"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#5865F2] text-white shadow-inner">
+                  <img src={discordIcon} alt="" className="h-6 w-6" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-bold text-white">Discord</p>
+                  <p className="text-xs text-slate-400">Gabung komunitas pembaca</p>
+                </div>
+                <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+              </a>
+
+              <a
+                href="https://trakteer.id/Nesiatv.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-slate-900 p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-slate-800/80"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-inner">
+                  <Heart className="h-6 w-6" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-bold text-white">Donasi</p>
+                  <p className="text-xs text-slate-400">Dukung lewat Trakteer</p>
+                </div>
+                <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+              </a>
             </div>
 
           </div>
@@ -502,6 +566,14 @@ const EpisodePlayer = () => {
         </div>
 
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={window.location.href}
+        title={content.title ? `Nonton ${content.title} ${number ? `Episode ${number}` : ''} Sub Indo gratis di Nesiatv!` : 'Nesiatv'}
+      />
 
       <LoginModal 
         open={loginModalOpen} 

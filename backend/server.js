@@ -34,6 +34,7 @@ const stickerRoutes = require('./routes/stickerRoutes');
 const liveChatRoutes = require('./routes/liveChatRoutes');
 const imageProxyRoutes = require('./routes/imageProxyRoutes');
 const otakudesuRoutes = require('./routes/otakudesuRoutes');
+const chapterReactionRoutes = require('./routes/chapterReactionRoutes');
 const { validateApiOrigin } = require('./middlewares/validateApiOrigin');
 
 const app = express();
@@ -215,7 +216,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/contents', validateApiOrigin(), contentsRoutes);
@@ -223,6 +223,7 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/readlists', readlistRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/votes', voteRoutes);
+app.use('/api/episode-reactions', chapterReactionRoutes);
 app.use('/api/anime', validateApiOrigin(), animeRoutes);
 app.use('/api/episodes', validateApiOrigin(), episodeRoutes);
 app.use('/api/comic', validateApiOrigin(), comicRoutes);

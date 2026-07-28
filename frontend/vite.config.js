@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.jpg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'KomikNesia',
-        short_name: 'KomikNesia',
-        description: 'Baca komik, manga, manhwa, dan manhua bahasa Indonesia.',
+        name: 'Nesiatv',
+        short_name: 'Nesiatv',
+        description: 'Nonton anime & baca komik bahasa Indonesia.',
         theme_color: '#ffffff',
         background_color: '#000000',
         display: 'standalone',

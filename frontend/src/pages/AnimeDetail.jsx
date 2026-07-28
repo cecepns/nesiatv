@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Bookmark, ListPlus, Share2, Play, Star, Tag, Eye, Lock, ArrowLeft, Home, Download, Sparkles } from 'lucide-react';
+import { Bookmark, ListPlus, Share2, Play, Star, Tag, Eye, Lock, ArrowLeft, Home, Download, Sparkles, ChevronRight, ExternalLink, Heart } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL, apiClient, getImageUrl } from '../utils/api';
 import CommentSection from '../components/CommentSection';
 import LoginModal from '../components/LoginModal';
+import ShareModal from '../components/ShareModal';
 import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
+import discordIcon from '../assets/discord.svg';
 
 const AnimeDetail = () => {
   const { slug } = useParams();
@@ -19,6 +21,7 @@ const AnimeDetail = () => {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
   const [userReaction, setUserReaction] = useState(null);
 
@@ -77,11 +80,13 @@ const AnimeDetail = () => {
           setIsBookmarked(bookmarkStatus?.bookmarked || false);
         }
 
-        if (data?.slug) {
-          apiClient.getVotes(data.slug).then((res) => {
+        const epList = data?.episodes || data?.episodes_list || [];
+        const firstEp = epList[0];
+        if (firstEp?.slug) {
+          apiClient.getEpisodeReactions(firstEp.slug).then((res) => {
             if (res?.status && res?.data) {
-              setReactionCounts(res.data.counts || emptyReactionCounts());
-              setUserReaction(res.data.user_vote || res.data.user_reaction || null);
+              setReactionCounts(res.data || emptyReactionCounts());
+              setUserReaction(res.userReaction || res.data?.user_reaction || null);
             }
           }).catch(() => {});
         }
@@ -101,13 +106,18 @@ const AnimeDetail = () => {
       setLoginModalOpen(true);
       return;
     }
-    if (!anime?.slug) return;
+    const epList = anime?.episodes || anime?.episodes_list || [];
+    const firstEp = epList[0];
+    if (!firstEp?.slug) return;
 
     try {
-      const res = await apiClient.submitVote(anime.slug, reactionType);
-      if (res?.status && res?.data) {
-        setReactionCounts(res.data.counts || emptyReactionCounts());
-        setUserReaction(res.data.user_vote || res.data.user_reaction || null);
+      const res = await apiClient.submitEpisodeReaction(firstEp.slug, reactionType);
+      if (res?.status) {
+        const reactionsData = await apiClient.getEpisodeReactions(firstEp.slug);
+        if (reactionsData?.status && reactionsData?.data) {
+          setReactionCounts(reactionsData.data || emptyReactionCounts());
+          setUserReaction(reactionsData.userReaction || null);
+        }
         toast.success('Reaksi berhasil disimpan!');
       }
     } catch (err) {
@@ -139,29 +149,8 @@ const AnimeDetail = () => {
     }
   };
 
-  const handleShare = async () => {
-    const shareData = {
-      title: anime?.title || 'Nesiatv',
-      text: `Nonton anime ${anime?.title} di Nesiatv!`,
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-        }
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success('Link berhasil disalin ke clipboard!');
-      } catch (err) {
-        toast.error('Gagal menyalin link');
-      }
-    }
+  const handleShare = () => {
+    setShareModalOpen(true);
   };
 
   if (loading) {
@@ -375,6 +364,111 @@ const AnimeDetail = () => {
           </button>
         </div>
 
+        {/* Anime Metadata Info Card */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-sm text-slate-300 bg-[#131622] p-5 rounded-2xl border border-slate-800/80 mb-6">
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Rating</span>
+            <span className="text-amber-400 font-bold flex items-center gap-1 mt-0.5">
+              <Star className="w-4 h-4 fill-current" />
+              {parseFloat(anime.rating || 0).toFixed(1)} / 10
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Status</span>
+            <span className="text-white font-medium capitalize mt-0.5 block">{anime.status || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Tipe</span>
+            <span className="text-white font-medium uppercase mt-0.5 block">{anime.content_type || 'TV'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Studio</span>
+            <span className="text-white font-medium truncate max-w-xs block mt-0.5">{anime.studio || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Total Episode</span>
+            <span className="text-white font-medium mt-0.5 block">{anime.total_episodes || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Tahun Rilis</span>
+            <span className="text-white font-medium mt-0.5 block">{anime.release || '-'}</span>
+          </div>
+        </div>
+
+        {/* Genres */}
+        {anime.genres && anime.genres.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6 justify-center">
+            {anime.genres.map((g) => (
+              <Link
+                key={g.id}
+                to={`/catalog?genre=${g.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#151928] hover:bg-[#1c2236] text-xs text-slate-300 transition border border-slate-800"
+              >
+                <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                {g.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Synopsis */}
+        <div className="bg-[#131622] border border-slate-800/80 p-5 rounded-2xl mb-8">
+          <h2 className="text-lg font-bold text-white mb-3 border-b border-slate-800 pb-2">Sinopsis</h2>
+          <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-line">
+            {anime.synopsis || 'Tidak ada sinopsis untuk anime ini.'}
+          </p>
+        </div>
+
+        {/* Community & Share Action Cards */}
+        <div className="space-y-3 mb-8">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-[#131622] p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-[#181c2b]"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-inner">
+              <Share2 className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-white">Bagikan anime</p>
+              <p className="text-xs text-slate-400">Salin tautan, WhatsApp, X, TikTok, Telegram</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300" aria-hidden />
+          </button>
+
+          <a
+            href="https://discord.gg/dgC22PSm9h"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-[#131622] p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-[#181c2b]"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#5865F2] text-white shadow-inner">
+              <img src={discordIcon} alt="" className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-white">Discord</p>
+              <p className="text-xs text-slate-400">Gabung komunitas pembaca</p>
+            </div>
+            <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+          </a>
+
+          <a
+            href="https://trakteer.id/Nesiatv.id"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-[#131622] p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-[#181c2b]"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-inner">
+              <Heart className="h-6 w-6" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-white">Donasi</p>
+              <p className="text-xs text-slate-400">Dukung lewat Trakteer</p>
+            </div>
+            <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+          </a>
+        </div>
+
         {/* Episodes List */}
         <div className="mt-8 space-y-3">
           <h2 className="text-lg font-bold text-white mb-4 px-1">Daftar Episode</h2>
@@ -433,22 +527,13 @@ const AnimeDetail = () => {
                       </div>
                     </Link>
 
-                    {/* Right Controls: UP Badge, Download, Play */}
+                    {/* Right Controls: UP Badge, Play */}
                     <div className="flex items-center gap-2.5 shrink-0">
                       {isLatest && (
                         <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white font-extrabold text-[10px] sm:text-xs uppercase tracking-wide shadow-sm">
                           UP
                         </span>
                       )}
-
-                      <Link
-                        to={`/watch/${ep.slug}`}
-                        onClick={(e) => handleEpisodeClick(e, ep)}
-                        title="Download / Watch"
-                        className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
-                      >
-                        <Download className="w-5 h-5" />
-                      </Link>
 
                       <Link
                         to={`/watch/${ep.slug}`}
@@ -507,62 +592,15 @@ const AnimeDetail = () => {
           <CommentSection animeId={anime.id} />
         </div>
 
-        {/* Anime Metadata Info Card */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-sm text-slate-300 bg-[#131622] p-5 rounded-2xl border border-slate-800/80 mb-6">
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Rating</span>
-            <span className="text-amber-400 font-bold flex items-center gap-1 mt-0.5">
-              <Star className="w-4 h-4 fill-current" />
-              {parseFloat(anime.rating || 0).toFixed(1)} / 10
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Status</span>
-            <span className="text-white font-medium capitalize mt-0.5 block">{anime.status || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Tipe</span>
-            <span className="text-white font-medium uppercase mt-0.5 block">{anime.content_type || 'TV'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Studio</span>
-            <span className="text-white font-medium truncate max-w-xs block mt-0.5">{anime.studio || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Total Episode</span>
-            <span className="text-white font-medium mt-0.5 block">{anime.total_episodes || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Tahun Rilis</span>
-            <span className="text-white font-medium mt-0.5 block">{anime.release || '-'}</span>
-          </div>
-        </div>
-
-        {/* Genres */}
-        {anime.genres && anime.genres.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6 justify-center">
-            {anime.genres.map((g) => (
-              <Link
-                key={g.id}
-                to={`/catalog?genre=${g.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#151928] hover:bg-[#1c2236] text-xs text-slate-300 transition border border-slate-800"
-              >
-                <Tag className="w-3.5 h-3.5 text-indigo-400" />
-                {g.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Synopsis */}
-        <div className="bg-[#131622] border border-slate-800/80 p-5 rounded-2xl mb-8">
-          <h2 className="text-lg font-bold text-white mb-3 border-b border-slate-800 pb-2">Sinopsis</h2>
-          <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-line">
-            {anime.synopsis || 'Tidak ada sinopsis untuk anime ini.'}
-          </p>
-        </div>
-
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={window.location.href}
+        title={anime?.title ? `Nonton anime ${anime.title} Sub Indo gratis di Nesiatv!` : 'Nesiatv'}
+      />
 
       {/* Login Modal */}
       <LoginModal

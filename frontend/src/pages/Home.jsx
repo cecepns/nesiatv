@@ -14,6 +14,7 @@ import {
   Swords,
   Theater,
   Wand2,
+  BookOpen,
 } from "lucide-react";
 import UpdateSection from "../components/UpdateSection";
 import PopularSection from "../components/PopularSection";
@@ -38,6 +39,7 @@ import { apiClient } from "../utils/api";
 import discordIcon from "../assets/discord.svg";
 import LiveChatWidget from "../components/LiveChatWidget";
 import LoginModal from "../components/LoginModal";
+import ShareModal from "../components/ShareModal";
 import { useChapterAccess } from "../hooks/useChapterAccess";
 
 const Home = () => {
@@ -49,7 +51,6 @@ const Home = () => {
   const [homePopupIntervalMinutes, setHomePopupIntervalMinutes] = useState(10);
   const [popupSettingsReady, setPopupSettingsReady] = useState(false);
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
-  const [installModalOpen, setInstallModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
@@ -74,17 +75,17 @@ const Home = () => {
         setDeferredPrompt(null);
       } catch (err) {
         console.error("Install prompt error:", err);
-        setInstallModalOpen(true);
+        toast.info("Silakan gunakan menu browser untuk 'Tambahkan ke Layar Utama'");
       }
     } else {
-      setInstallModalOpen(true);
+      toast.info("Silakan gunakan menu browser (titik 3) -> 'Tambahkan ke Layar Utama'");
     }
   };
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://nesiatv.com";
   const shareTitle =
     "Baca anime, manga, manhwa, dan manhua Bahasa Indonesia di Nesiatv!";
   const discordInviteUrl = "https://discord.gg/dgC22PSm9h";
-  const donateUrl = "https://saweria.co/Nesiatv";
+  const donateUrl = "https://trakteer.id/Nesiatv.id";
 
   const copyShareLink = async (context = "default") => {
     try {
@@ -252,22 +253,37 @@ const Home = () => {
           data-aos-delay="120"
         >
 
-          <button
-            type="button"
-            onClick={() => setSharePopupOpen(true)}
+          <a
+            href="https://komiknesia.id/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-inner md:h-14 md:w-14">
-              <Share2 className="h-6 w-6 md:h-7 md:w-7" aria-hidden />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white shadow-inner md:h-14 md:w-14">
+              <BookOpen className="h-6 w-6 md:h-7 md:w-7" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold text-white md:text-lg">Bagikan Nesiatv</p>
-              <p className="text-sm text-slate-400">
-                Salin tautan, WhatsApp, X, TikTok, Telegram
-              </p>
+              <p className="text-base font-semibold text-white md:text-lg">Baca Komik ID</p>
+              <p className="text-sm text-slate-400">Baca Komik Bahasa Indonesia gratis</p>
             </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300" aria-hidden />
-          </button>
+            <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+          </a>
+
+          <a
+            href="https://nusakomik.id/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-inner md:h-14 md:w-14">
+              <BookOpen className="h-6 w-6 md:h-7 md:w-7" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-white md:text-lg">Baca Komik (alternatif)</p>
+              <p className="text-sm text-slate-400">Situs baca komik alternatif</p>
+            </div>
+            <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
+          </a>
 
           <a
             href={discordInviteUrl}
@@ -296,10 +312,27 @@ const Home = () => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-base font-semibold text-white md:text-lg">Donasi</p>
-              <p className="text-sm text-slate-400">Dukung lewat Saweria</p>
+              <p className="text-sm text-slate-400">Dukung lewat Trakteer</p>
             </div>
             <ExternalLink className="h-5 w-5 shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden />
           </a>
+
+          <button
+            type="button"
+            onClick={() => setSharePopupOpen(true)}
+            className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-inner md:h-14 md:w-14">
+              <Share2 className="h-6 w-6 md:h-7 md:w-7" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-white md:text-lg">Share Nesiatv</p>
+              <p className="text-sm text-slate-400">
+                Salin tautan, WhatsApp, X, TikTok, Telegram
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-300" aria-hidden />
+          </button>
 
           <button
             type="button"
@@ -317,140 +350,14 @@ const Home = () => {
           </button>
         </div>
 
-        {sharePopupOpen && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Bagikan Nesiatv"
-          >
-            <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 p-5 text-left shadow-2xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Bagikan Nesiatv</h3>
-                <button
-                  type="button"
-                  onClick={() => setSharePopupOpen(false)}
-                  className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-                  aria-label="Tutup"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <ShareModal
+          isOpen={sharePopupOpen}
+          onClose={() => setSharePopupOpen(false)}
+          shareUrl={shareUrl}
+          title={shareTitle}
+        />
 
-              <p className="mb-4 text-sm text-slate-400">
-                Pilih cara membagikan tautan situs ke teman atau medsos kamu.
-              </p>
 
-              <div className="flex flex-col gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    copyShareLink("default");
-                  }}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-600">
-                    <Copy className="h-5 w-5" aria-hidden />
-                  </span>
-                  <span>Salin tautan</span>
-                </button>
-
-                <WhatsappShareButton
-                  url={shareUrl}
-                  title={shareTitle}
-                  separator=" — "
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10"
-                  resetButtonStyle={false}
-                  onClick={() => setSharePopupOpen(false)}
-                >
-                  <WhatsappIcon size={40} round />
-                  <span>WhatsApp</span>
-                </WhatsappShareButton>
-
-                <TwitterShareButton
-                  url={shareUrl}
-                  title={shareTitle}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10"
-                  resetButtonStyle={false}
-                  onClick={() => setSharePopupOpen(false)}
-                >
-                  <TwitterIcon size={40} round />
-                  <span>X (Twitter)</span>
-                </TwitterShareButton>
-
-                <button
-                  type="button"
-                  onClick={() => copyShareLink("tiktok")}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-lg font-bold tracking-tight text-white ring-1 ring-white/20" aria-hidden>
-                    TT
-                  </span>
-                  <span className="flex flex-col">
-                    <span>TikTok</span>
-                    <span className="text-xs font-normal text-slate-400">Salin tautan untuk dibagikan di TikTok</span>
-                  </span>
-                </button>
-
-                <TelegramShareButton
-                  url={shareUrl}
-                  title={shareTitle}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm font-medium text-white transition-colors hover:bg-white/10"
-                  resetButtonStyle={false}
-                  onClick={() => setSharePopupOpen(false)}
-                >
-                  <TelegramIcon size={40} round />
-                  <span>Telegram</span>
-                </TelegramShareButton>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {installModalOpen && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Cara memasang aplikasi"
-          >
-            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-5 text-left shadow-2xl">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-white">Cara memasang aplikasi</h3>
-                <button
-                  type="button"
-                  onClick={() => setInstallModalOpen(false)}
-                  className="rounded-lg p-1.5 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-                  aria-label="Tutup"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <p className="mb-4 text-sm leading-relaxed text-slate-300">
-                Ikuti langkah berikut untuk memasang aplikasi web Nesiatv di perangkat kamu (tampilan seperti aplikasi):
-              </p>
-
-              <ol className="mb-6 list-decimal space-y-3 pl-5 text-sm leading-relaxed text-slate-200">
-                <li>Ketuk ikon menu (titik tiga) di pojok browser.</li>
-                <li>
-                  Pilih <strong className="text-white">Pasang aplikasi</strong> atau{" "}
-                  <strong className="text-white">Tambahkan ke Layar utama</strong> (nama menu bisa sedikit berbeda
-                  tergantung browser).
-                </li>
-                <li>Ikuti petunjuk di layar hingga pemasangan selesai.</li>
-              </ol>
-
-              <button
-                type="button"
-                onClick={() => setInstallModalOpen(false)}
-                className="w-full rounded-xl bg-sky-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        )}
 
 
 

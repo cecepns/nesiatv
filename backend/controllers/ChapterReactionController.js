@@ -26,10 +26,13 @@ const getBySlug = async (req, res) => {
     const { slug } = req.params;
     const actorKey = getAnonymousActorKey(req);
 
-    const [chapterRows] = await db.execute('SELECT id FROM chapters WHERE slug = ?', [slug]);
+    let [chapterRows] = await db.execute('SELECT id FROM episodes WHERE slug = ?', [slug]);
+    if (chapterRows.length === 0) {
+      [chapterRows] = await db.execute('SELECT id FROM chapters WHERE slug = ?', [slug]);
+    }
 
     if (chapterRows.length === 0) {
-      return res.status(404).json({ status: false, error: 'Chapter not found' });
+      return res.status(404).json({ status: false, error: 'Episode not found' });
     }
 
     const episodeId = chapterRows[0].id;
@@ -97,10 +100,13 @@ const submit = async (req, res) => {
     const actorKey = getAnonymousActorKey(req);
     const userId = req.user ? req.user.id : null;
 
-    const [chapterRows] = await db.execute('SELECT id FROM chapters WHERE slug = ?', [slug]);
+    let [chapterRows] = await db.execute('SELECT id FROM episodes WHERE slug = ?', [slug]);
+    if (chapterRows.length === 0) {
+      [chapterRows] = await db.execute('SELECT id FROM chapters WHERE slug = ?', [slug]);
+    }
 
     if (chapterRows.length === 0) {
-      return res.status(404).json({ status: false, error: 'Chapter not found' });
+      return res.status(404).json({ status: false, error: 'Episode not found' });
     }
 
     const episodeId = chapterRows[0].id;
