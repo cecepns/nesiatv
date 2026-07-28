@@ -547,15 +547,15 @@ const EpisodePlayer = () => {
                     key={opt.id}
                     type="button"
                     onClick={() => handleVote(opt.id)}
-                    className={`flex flex-col items-center p-2.5 rounded-xl border transition-all duration-200 ${
+                    className={`flex flex-col items-center px-3.5 py-2.5 rounded-xl border transition-all duration-200 min-w-[62px] ${
                       isUserSelected
                         ? 'border-indigo-500 bg-indigo-600/20 text-white scale-105 shadow-md shadow-indigo-600/30'
                         : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60'
                     }`}
                   >
-                    <img src={opt.image} alt={opt.label} className="w-8 h-8 object-contain mb-1" />
-                    <span className="text-[11px] font-semibold">{opt.label}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">{count}</span>
+                    <span className="text-3xl mb-1 select-none leading-none">{opt.emoji}</span>
+                    <span className="text-xs font-bold text-slate-200">{opt.label}</span>
+                    <span className="text-[11px] text-slate-400 font-extrabold mt-0.5">{count}</span>
                   </button>
                 );
               })}
