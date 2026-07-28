@@ -17,10 +17,10 @@ const typeOptions = [
   { label: "Anime", value: "Anime", country: null, apiType: "anime" },
   { label: "Film", value: "Film", country: null, apiType: "film" },
   { label: "Donghua", value: "Donghua", country: null, apiType: "donghua" },
-  { label: "Comic", value: "Comic", country: null, apiType: "comic" },
-  { label: "Manga", value: "Manga", country: "JP", apiType: "manga" },
-  { label: "Manhua", value: "Manhua", country: "CN", apiType: "manhua" },
-  { label: "Manhwa", value: "Manhwa", country: "KR", apiType: "manhwa" },
+  // { label: "Comic", value: "Comic", country: null, apiType: "comic" },
+  // { label: "Manga", value: "Manga", country: "JP", apiType: "manga" },
+  // { label: "Manhua", value: "Manhua", country: "CN", apiType: "manhua" },
+  // { label: "Manhwa", value: "Manhwa", country: "KR", apiType: "manhwa" },
 ];
 const orderOptions = ["Az", "Za", "Update", "Added", "Popular"];
 
@@ -534,8 +534,8 @@ const Content = () => {
               type="button"
               onClick={() => setCardLayout("vertical")}
               className={`p-2 rounded-xl transition-all ${cardLayout === "vertical"
-                  ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
-                  : "text-slate-400 hover:text-slate-200"
+                ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
+                : "text-slate-400 hover:text-slate-200"
                 }`}
               aria-label="Tampilan Grid"
               title="Tampilan Grid"
@@ -546,8 +546,8 @@ const Content = () => {
               type="button"
               onClick={() => setCardLayout("horizontal")}
               className={`p-2 rounded-xl transition-all ${cardLayout === "horizontal"
-                  ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
-                  : "text-slate-400 hover:text-slate-200"
+                ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
+                : "text-slate-400 hover:text-slate-200"
                 }`}
               aria-label="Tampilan Baris"
               title="Tampilan Baris"
@@ -841,8 +841,8 @@ const Content = () => {
                       key={manga.id}
                       onClick={() => navigate(`/anime/${manga.slug}`)}
                       className={`bg-white dark:bg-white/[0.06] dark:border dark:border-white/10 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer ${cardLayout === "horizontal"
-                          ? "flex flex-row gap-3 sm:gap-4 p-3"
-                          : "flex flex-col"
+                        ? "flex flex-row gap-3 sm:gap-4 p-3"
+                        : "flex flex-col"
                         }`}
                     >
                       {/* Cover Image */}
@@ -977,8 +977,8 @@ const Content = () => {
                       type="button"
                       onClick={() => setStatusFilter(st)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedStatus === st
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
-                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                        ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
+                        : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                         }`}
                     >
                       {st}
@@ -997,8 +997,8 @@ const Content = () => {
                       type="button"
                       onClick={() => setTypeFilter(tp.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedType === tp.value
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
-                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                        ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
+                        : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                         }`}
                     >
                       {tp.label}
@@ -1017,8 +1017,8 @@ const Content = () => {
                       type="button"
                       onClick={() => setProjectFilter(opt.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedProject === opt.value
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
-                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                        ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
+                        : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                         }`}
                     >
                       {opt.label}
@@ -1037,8 +1037,8 @@ const Content = () => {
                       type="button"
                       onClick={() => setOrderFilter(ord)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedOrder === ord
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
-                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                        ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
+                        : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                         }`}
                     >
                       {ord}
@@ -1064,8 +1064,8 @@ const Content = () => {
                           type="button"
                           onClick={() => toggleGenre(g.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${isChecked
-                              ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
-                              : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
+                            ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
+                            : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
                             }`}
                         >
                           {g.name}
