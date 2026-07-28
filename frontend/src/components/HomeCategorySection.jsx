@@ -11,7 +11,7 @@ const contentBtnTrans = "transition-all duration-200";
 const contentFilterInactive = `rounded-xl border ${contentBtnTrans} border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800`;
 const contentCtaClearAll = `rounded-xl border border-sky-500/25 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_0_0_#0369a1] ${contentBtnTrans} hover:-translate-y-0.5 hover:shadow-[0_6px_0_0_#0369a1] active:translate-y-0.5 active:shadow-[0_3px_0_0_#0369a1] dark:border-cyan-200/20 dark:bg-[#0a2d52] dark:text-cyan-50 dark:shadow-[0_5px_0_0_#0ea5e9] dark:hover:shadow-[0_6px_0_0_#38bdf8] dark:active:shadow-[0_3px_0_0_#0369a1] dark:hover:brightness-110`;
 
-const MOBILE_HOME_SECTION_CAP = 10;
+const MOBILE_HOME_SECTION_CAP = 15;
 
 const HomeCategorySection = ({
   title,
@@ -27,8 +27,8 @@ const HomeCategorySection = ({
   const isMdUp = useIsMdUp();
 
   const visibleItems = useMemo(
-    () => (isMdUp ? items : items.slice(0, MOBILE_HOME_SECTION_CAP)),
-    [isMdUp, items]
+    () => items.slice(0, 15),
+    [items]
   );
 
   useEffect(() => {
@@ -129,7 +129,7 @@ const HomeCategorySection = ({
         <div
           className={
             cardLayout === "vertical"
-              ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4"
+              ? "flex md:grid overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 gap-3.5 md:gap-4 snap-x snap-mandatory no-scrollbar md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5"
               : "flex flex-col gap-3"
           }
         >
@@ -137,24 +137,24 @@ const HomeCategorySection = ({
             <div
               key={manga.id}
               onClick={() => navigate(`/anime/${manga.slug}`)}
-              className={`bg-white dark:bg-primary-900 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer border border-slate-200/80 dark:border-slate-800 ${
+              className={`bg-white dark:bg-primary-900 rounded-2xl shadow-md hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 overflow-hidden group cursor-pointer border border-slate-200/80 dark:border-slate-800/80 ${
                 cardLayout === "horizontal"
-                  ? "flex flex-row gap-3 p-3 sm:gap-4 sm:p-4"
-                  : "flex flex-col"
+                  ? "flex flex-row gap-3 p-3 sm:gap-4 sm:p-4 hover:-translate-y-0.5"
+                  : "flex flex-col shrink-0 w-[150px] sm:w-[175px] md:w-auto snap-start hover:-translate-y-1.5 hover:scale-[1.03]"
               }`}
             >
               {/* Cover Image */}
               <div
                 className={
                   cardLayout === "vertical"
-                    ? "relative aspect-[3/4] overflow-hidden"
-                    : "relative aspect-[3/4] w-[5.5rem] shrink-0 overflow-hidden rounded-md sm:w-28"
+                    ? "relative aspect-[3/4] overflow-hidden rounded-t-2xl"
+                    : "relative aspect-[3/4] w-[5.5rem] shrink-0 overflow-hidden rounded-xl sm:w-28"
                 }
               >
                 <LazyImage
                   src={getImageUrl(manga.cover || manga.thumbnail)}
                   alt={manga.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                   wrapperClassName="w-full h-full"
                 />
 

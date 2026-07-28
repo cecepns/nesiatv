@@ -372,25 +372,25 @@ const Home = () => {
           />
         </div>
 
-        {/* 3. FILM Section */}
+        {/* 3. Donghua Section */}
         <div data-aos="fade-up" data-aos-delay="175">
-          <HomeCategorySection
-            title="FILM"
-            icon={Film}
-            iconBgGradient="from-rose-600 to-pink-600"
-            filterParams={{ type: "film" }}
-            viewAllUrl="/content?type=film"
-          />
-        </div>
-
-        {/* 4. Donghua Section */}
-        <div data-aos="fade-up" data-aos-delay="190">
           <HomeCategorySection
             title="Donghua"
             icon={Sparkles}
             iconBgGradient="from-amber-500 to-red-500"
             filterParams={{ type: "donghua" }}
             viewAllUrl="/content?type=donghua"
+          />
+        </div>
+
+        {/* 4. Film Section */}
+        <div data-aos="fade-up" data-aos-delay="190">
+          <HomeCategorySection
+            title="Film"
+            icon={Film}
+            iconBgGradient="from-rose-600 to-pink-600"
+            filterParams={{ type: "film" }}
+            viewAllUrl="/content?type=film"
           />
         </div>
 
