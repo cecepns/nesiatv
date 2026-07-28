@@ -1,6 +1,11 @@
 {
-  "name": "KomikNesia",
-  "short_name": "KomikNesia",
+  "name": "Nesiatv",
+  "short_name": "Nesiatv",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0d0f17",
+  "background_color": "#0d0f17",
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -11,9 +16,12 @@
       "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#ffffff",
-  "background_color": "#000000",
-  "display": "standalone"
+  ]
 }
