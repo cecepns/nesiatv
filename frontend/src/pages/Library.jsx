@@ -413,11 +413,10 @@ const Library = () => {
                     </p>
                   </div>
                   {bookmarkLoading ? (
-                    <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-                      <p className="text-gray-500 dark:text-gray-400 mt-4">
-                        Memuat bookmark...
-                      </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-pulse">
+                      {[...Array(10)].map((_, i) => (
+                        <div key={i} className="aspect-[3/4] bg-slate-800/50 rounded-xl" />
+                      ))}
                     </div>
                   ) : bookmarkList.length === 0 ? (
                     <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
@@ -547,9 +546,10 @@ const Library = () => {
                     Kembali
                   </button>
                   {readlistDetailLoading || !readlistDetail ? (
-                    <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto" />
-                      <p className="text-gray-500 dark:text-gray-400 mt-4">Memuat playlist...</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-pulse">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="aspect-[3/4] bg-slate-800/50 rounded-xl" />
+                      ))}
                     </div>
                   ) : (
                     <>
@@ -700,9 +700,10 @@ const Library = () => {
                     </button>
                   </div>
                   {readlistsLoading ? (
-                    <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto" />
-                      <p className="text-gray-500 dark:text-gray-400 mt-4">Memuat readlist...</p>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-28 bg-slate-800/50 rounded-xl" />
+                      ))}
                     </div>
                   ) : readlists.length === 0 ? (
                     <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
@@ -931,11 +932,10 @@ const Library = () => {
               </div>
 
               {popularMangaLoading ? (
-                <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-                  <p className="text-gray-500 dark:text-gray-400 mt-4">
-                    Memuat manga populer...
-                  </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-pulse">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="aspect-[3/4] bg-slate-800/50 rounded-xl" />
+                  ))}
                 </div>
               ) : popularMangaList.length === 0 ? (
                 <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">

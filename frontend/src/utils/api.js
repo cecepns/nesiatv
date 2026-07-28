@@ -498,14 +498,11 @@ class APIClient {
   }
 
   getEpisodeReactions(episodeSlug) {
-    return this.request(`/episode-reactions/${encodeURIComponent(episodeSlug)}`);
+    return this.getVotes(episodeSlug);
   }
 
   submitEpisodeReaction(episodeSlug, reaction_type) {
-    return this.request('/episode-reactions', {
-      method: 'POST',
-      body: { slug: episodeSlug, reaction_type },
-    });
+    return this.submitVote(episodeSlug, reaction_type);
   }
 
   voteAnime(animeId, type) {

@@ -7,7 +7,6 @@ import {
   Copy,
   Smartphone,
   Heart,
-  Crown,
   ChevronRight,
   Tv,
   Film,
@@ -252,21 +251,6 @@ const Home = () => {
           data-aos="fade-up"
           data-aos-delay="120"
         >
-          <Link
-            to="/premium"
-            className="group flex w-full items-center gap-4 rounded-2xl border border-amber-500/30 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-amber-400/50 hover:bg-slate-800/95 md:p-5"
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-inner md:h-14 md:w-14">
-              <Crown className="h-6 w-6 md:h-7 md:w-7" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold text-white md:text-lg">Premium</p>
-              <p className="text-sm text-slate-400">
-                Tanpa iklan, bonus point, dan fitur eksklusif
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-300" aria-hidden />
-          </Link>
 
           <button
             type="button"

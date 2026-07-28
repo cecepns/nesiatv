@@ -14,14 +14,16 @@ import {
   ExternalLink,
   Lock,
   LogIn,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL, getImageUrl } from '../utils/api';
+import { API_BASE_URL, apiClient, getImageUrl } from '../utils/api';
 import LazyImage from '../components/LazyImage';
 import CommentSection from '../components/CommentSection';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
+import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
 
 const EpisodePlayer = () => {
   const { episodeSlug } = useParams();
@@ -33,6 +35,37 @@ const EpisodePlayer = () => {
   const [activeVideo, setActiveVideo] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [selectedDownloadId, setSelectedDownloadId] = useState('');
+  const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
+  const [userReaction, setUserReaction] = useState(null);
+
+  useEffect(() => {
+    if (!episodeSlug) return;
+    apiClient.getEpisodeReactions(episodeSlug).then((res) => {
+      if (res?.status && res?.data) {
+        setReactionCounts(res.data.counts || emptyReactionCounts());
+        setUserReaction(res.data.user_reaction || null);
+      }
+    }).catch(() => {});
+  }, [episodeSlug]);
+
+  const handleVote = async (reactionType) => {
+    if (!isAuthenticated) {
+      toast.warning('Silakan login terlebih dahulu untuk memberikan reaksi');
+      setLoginModalOpen(true);
+      return;
+    }
+    try {
+      const res = await apiClient.submitEpisodeReaction(episodeSlug, reactionType);
+      if (res?.status && res?.data) {
+        setReactionCounts(res.data.counts || emptyReactionCounts());
+        setUserReaction(res.data.user_reaction || null);
+        toast.success('Reaksi berhasil disimpan!');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengirim reaksi');
+    }
+  };
 
   const videos = data?.videos || [];
   const downloadVideos = (videos || []).filter(v => v.quality?.includes('Download') || v.url?.includes('link.desustream.com'));
@@ -316,6 +349,8 @@ const EpisodePlayer = () => {
               )}
             </div>
 
+
+
             {/* Episode Navigation & Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
               <div className="flex items-center gap-2">
@@ -431,8 +466,38 @@ const EpisodePlayer = () => {
 
         </div>
 
-        {/* Section Komentar Paling Bawah */}
-        <div className="mt-12 pt-8 border-t border-slate-800/80">
+        {/* Section Reaksi & Komentar Paling Bawah */}
+        <div className="mt-12 pt-8 border-t border-slate-800/80 space-y-8">
+          {/* Reaction Section */}
+          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 max-w-xl mx-auto">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2 justify-center">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Reaksi Episode Ini
+            </h3>
+            <div className="flex flex-wrap items-center justify-around gap-2">
+              {REACTION_OPTIONS.map((opt) => {
+                const count = reactionCounts[opt.id] || 0;
+                const isUserSelected = userReaction === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleVote(opt.id)}
+                    className={`flex flex-col items-center p-2.5 rounded-xl border transition-all duration-200 ${
+                      isUserSelected
+                        ? 'border-indigo-500 bg-indigo-600/20 text-white scale-105 shadow-md shadow-indigo-600/30'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <img src={opt.image} alt={opt.label} className="w-8 h-8 object-contain mb-1" />
+                    <span className="text-[11px] font-semibold">{opt.label}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <CommentSection animeId={content.id} />
         </div>
 

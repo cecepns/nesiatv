@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL, apiClient, getImageUrl } from '../utils/api';
 import CommentSection from '../components/CommentSection';
 import LoginModal from '../components/LoginModal';
+import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
 
 const AnimeDetail = () => {
   const { slug } = useParams();
@@ -18,6 +19,8 @@ const AnimeDetail = () => {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
+  const [userReaction, setUserReaction] = useState(null);
 
   const isLockedValue = (val) => val === true || val === 1 || val === '1' || val === 'true';
 
@@ -73,6 +76,15 @@ const AnimeDetail = () => {
           const bookmarkStatus = await apiClient.checkBookmark(data.id);
           setIsBookmarked(bookmarkStatus?.bookmarked || false);
         }
+
+        if (data?.slug) {
+          apiClient.getVotes(data.slug).then((res) => {
+            if (res?.status && res?.data) {
+              setReactionCounts(res.data.counts || emptyReactionCounts());
+              setUserReaction(res.data.user_vote || res.data.user_reaction || null);
+            }
+          }).catch(() => {});
+        }
       } catch (err) {
         console.error(err);
         toast.error('Gagal memuat detail anime');
@@ -82,6 +94,27 @@ const AnimeDetail = () => {
     };
     fetchDetail();
   }, [slug, isAuthenticated]);
+
+  const handleVote = async (reactionType) => {
+    if (!isAuthenticated) {
+      toast.warning('Silakan login terlebih dahulu untuk memberikan reaksi');
+      setLoginModalOpen(true);
+      return;
+    }
+    if (!anime?.slug) return;
+
+    try {
+      const res = await apiClient.submitVote(anime.slug, reactionType);
+      if (res?.status && res?.data) {
+        setReactionCounts(res.data.counts || emptyReactionCounts());
+        setUserReaction(res.data.user_vote || res.data.user_reaction || null);
+        toast.success('Reaksi berhasil disimpan!');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengirim reaksi');
+    }
+  };
 
   const handleBookmarkToggle = async () => {
     if (!isAuthenticated) {
@@ -342,61 +375,6 @@ const AnimeDetail = () => {
           </button>
         </div>
 
-        {/* Anime Metadata Info Card */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-sm text-slate-300 bg-[#131622] p-5 rounded-2xl border border-slate-800/80 mb-6">
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Rating</span>
-            <span className="text-amber-400 font-bold flex items-center gap-1 mt-0.5">
-              <Star className="w-4 h-4 fill-current" />
-              {parseFloat(anime.rating || 0).toFixed(1)} / 10
-            </span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Status</span>
-            <span className="text-white font-medium capitalize mt-0.5 block">{anime.status || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Tipe</span>
-            <span className="text-white font-medium uppercase mt-0.5 block">{anime.content_type || 'TV'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Studio</span>
-            <span className="text-white font-medium truncate max-w-xs block mt-0.5">{anime.studio || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Total Episode</span>
-            <span className="text-white font-medium mt-0.5 block">{anime.total_episodes || '-'}</span>
-          </div>
-          <div>
-            <span className="text-slate-500 block text-xs uppercase font-semibold">Tahun Rilis</span>
-            <span className="text-white font-medium mt-0.5 block">{anime.release || '-'}</span>
-          </div>
-        </div>
-
-        {/* Genres */}
-        {anime.genres && anime.genres.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6 justify-center">
-            {anime.genres.map((g) => (
-              <Link
-                key={g.id}
-                to={`/catalog?genre=${g.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#151928] hover:bg-[#1c2236] text-xs text-slate-300 transition border border-slate-800"
-              >
-                <Tag className="w-3.5 h-3.5 text-indigo-400" />
-                {g.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Synopsis */}
-        <div className="bg-[#131622] border border-slate-800/80 p-5 rounded-2xl mb-8">
-          <h2 className="text-lg font-bold text-white mb-3 border-b border-slate-800 pb-2">Sinopsis</h2>
-          <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-line">
-            {anime.synopsis || 'Tidak ada sinopsis untuk anime ini.'}
-          </p>
-        </div>
-
         {/* Episodes List */}
         <div className="mt-8 space-y-3">
           <h2 className="text-lg font-bold text-white mb-4 px-1">Daftar Episode</h2>
@@ -492,9 +470,96 @@ const AnimeDetail = () => {
           )}
         </div>
 
+        {/* Reaction Section */}
+        {anime?.slug && (
+          <div className="bg-[#131622] p-5 rounded-2xl border border-slate-800/80 mt-10 mb-8 max-w-md mx-auto">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2 justify-center">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Reaksi Anime
+            </h3>
+            <div className="flex flex-wrap items-center justify-around gap-2">
+              {REACTION_OPTIONS.map((opt) => {
+                const count = reactionCounts[opt.id] || 0;
+                const isUserSelected = userReaction === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleVote(opt.id)}
+                    className={`flex flex-col items-center p-2.5 rounded-xl border transition-all duration-200 ${
+                      isUserSelected
+                        ? 'border-indigo-500 bg-indigo-600/20 text-white scale-105 shadow-md shadow-indigo-600/30'
+                        : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <img src={opt.image} alt={opt.label} className="w-7 h-7 object-contain mb-1" />
+                    <span className="text-[11px] font-semibold">{opt.label}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Comments section */}
         <div className="mt-8">
           <CommentSection animeId={anime.id} />
+        </div>
+
+        {/* Anime Metadata Info Card */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-sm text-slate-300 bg-[#131622] p-5 rounded-2xl border border-slate-800/80 mb-6">
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Rating</span>
+            <span className="text-amber-400 font-bold flex items-center gap-1 mt-0.5">
+              <Star className="w-4 h-4 fill-current" />
+              {parseFloat(anime.rating || 0).toFixed(1)} / 10
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Status</span>
+            <span className="text-white font-medium capitalize mt-0.5 block">{anime.status || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Tipe</span>
+            <span className="text-white font-medium uppercase mt-0.5 block">{anime.content_type || 'TV'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Studio</span>
+            <span className="text-white font-medium truncate max-w-xs block mt-0.5">{anime.studio || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Total Episode</span>
+            <span className="text-white font-medium mt-0.5 block">{anime.total_episodes || '-'}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-xs uppercase font-semibold">Tahun Rilis</span>
+            <span className="text-white font-medium mt-0.5 block">{anime.release || '-'}</span>
+          </div>
+        </div>
+
+        {/* Genres */}
+        {anime.genres && anime.genres.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6 justify-center">
+            {anime.genres.map((g) => (
+              <Link
+                key={g.id}
+                to={`/catalog?genre=${g.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#151928] hover:bg-[#1c2236] text-xs text-slate-300 transition border border-slate-800"
+              >
+                <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                {g.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Synopsis */}
+        <div className="bg-[#131622] border border-slate-800/80 p-5 rounded-2xl mb-8">
+          <h2 className="text-lg font-bold text-white mb-3 border-b border-slate-800 pb-2">Sinopsis</h2>
+          <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-line">
+            {anime.synopsis || 'Tidak ada sinopsis untuk anime ini.'}
+          </p>
         </div>
 
       </div>
