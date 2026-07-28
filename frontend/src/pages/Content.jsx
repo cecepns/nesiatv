@@ -371,8 +371,8 @@ const Content = () => {
         onClick={() => setPage(currentPage - 1)}
         disabled={currentPage === 1}
         className={`px-2 md:px-3 py-2 rounded-lg text-sm md:text-base ${currentPage === 1
-            ? "bg-gray-200 dark:bg-primary-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
-            : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
+          ? "bg-gray-200 dark:bg-primary-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+          : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
           }`}
       >
         <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
@@ -409,8 +409,8 @@ const Content = () => {
           key={i}
           onClick={() => setPage(i)}
           className={`px-3 md:px-4 py-2 rounded-lg text-sm md:text-base ${currentPage === i
-              ? "bg-blue-500 text-white"
-              : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
+            ? "bg-blue-500 text-white"
+            : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
             }`}
         >
           {i}
@@ -448,8 +448,8 @@ const Content = () => {
         onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
         className={`px-2 md:px-3 py-2 rounded-lg text-sm md:text-base ${currentPage === totalPages
-            ? "bg-gray-200 dark:bg-primary-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
-            : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
+          ? "bg-gray-200 dark:bg-primary-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+          : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
           }`}
       >
         <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
@@ -490,7 +490,7 @@ const Content = () => {
 
       {/* Page Header */}
       <div className="bg-white dark:bg-transparent border-b border-gray-200 dark:border-white/10 shadow-md dark:shadow-none top-20 z-40">
-        <div className="container mx-auto px-4 py-6 md:py-10">
+        <div className="container mx-auto px-4 py-3 md:py-10">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
@@ -533,11 +533,10 @@ const Content = () => {
             <button
               type="button"
               onClick={() => setCardLayout("vertical")}
-              className={`p-2 rounded-xl transition-all ${
-                cardLayout === "vertical"
+              className={`p-2 rounded-xl transition-all ${cardLayout === "vertical"
                   ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               aria-label="Tampilan Grid"
               title="Tampilan Grid"
             >
@@ -546,11 +545,10 @@ const Content = () => {
             <button
               type="button"
               onClick={() => setCardLayout("horizontal")}
-              className={`p-2 rounded-xl transition-all ${
-                cardLayout === "horizontal"
+              className={`p-2 rounded-xl transition-all ${cardLayout === "horizontal"
                   ? "bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-md shadow-indigo-600/40"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
               aria-label="Tampilan Baris"
               title="Tampilan Baris"
             >
@@ -604,8 +602,8 @@ const Content = () => {
                         setStatusFilter(status);
                       }}
                       className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${selectedStatus === status
-                          ? "border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
+                        ? "border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
                         }`}
                     >
                       {status}
@@ -628,8 +626,8 @@ const Content = () => {
                         setProjectFilter(opt.value);
                       }}
                       className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${selectedProject === opt.value
-                          ? "border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
+                        ? "border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
                         }`}
                     >
                       {opt.label}
@@ -653,8 +651,8 @@ const Content = () => {
                         setTypeFilter(type.value);
                       }}
                       className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${selectedType === type.value
-                          ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#facc15]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
+                        ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#facc15]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
                         }`}
                     >
                       {type.label}
@@ -676,8 +674,8 @@ const Content = () => {
                         setOrderFilter(order);
                       }}
                       className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${selectedOrder === order
-                          ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#facc15]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
+                        ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#facc15]"
+                        : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
                         }`}
                     >
                       {order}
@@ -842,11 +840,10 @@ const Content = () => {
                     <div
                       key={manga.id}
                       onClick={() => navigate(`/anime/${manga.slug}`)}
-                      className={`bg-white dark:bg-white/[0.06] dark:border dark:border-white/10 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer ${
-                        cardLayout === "horizontal"
+                      className={`bg-white dark:bg-white/[0.06] dark:border dark:border-white/10 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer ${cardLayout === "horizontal"
                           ? "flex flex-row gap-3 sm:gap-4 p-3"
                           : "flex flex-col"
-                      }`}
+                        }`}
                     >
                       {/* Cover Image */}
                       <div
@@ -979,11 +976,10 @@ const Content = () => {
                       key={st}
                       type="button"
                       onClick={() => setStatusFilter(st)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
-                        selectedStatus === st
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedStatus === st
                           ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
-                      }`}
+                        }`}
                     >
                       {st}
                     </button>
@@ -1000,11 +996,10 @@ const Content = () => {
                       key={tp.value}
                       type="button"
                       onClick={() => setTypeFilter(tp.value)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
-                        selectedType === tp.value
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedType === tp.value
                           ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
-                      }`}
+                        }`}
                     >
                       {tp.label}
                     </button>
@@ -1021,11 +1016,10 @@ const Content = () => {
                       key={opt.value}
                       type="button"
                       onClick={() => setProjectFilter(opt.value)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
-                        selectedProject === opt.value
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedProject === opt.value
                           ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </button>
@@ -1042,11 +1036,10 @@ const Content = () => {
                       key={ord}
                       type="button"
                       onClick={() => setOrderFilter(ord)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
-                        selectedOrder === ord
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${selectedOrder === ord
                           ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
-                      }`}
+                        }`}
                     >
                       {ord}
                     </button>
@@ -1070,11 +1063,10 @@ const Content = () => {
                           key={g.id}
                           type="button"
                           onClick={() => toggleGenre(g.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
-                            isChecked
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${isChecked
                               ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
                               : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
-                          }`}
+                            }`}
                         >
                           {g.name}
                         </button>
