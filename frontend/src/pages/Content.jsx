@@ -420,9 +420,9 @@ const Content = () => {
         <button
           key={i}
           onClick={() => setPage(i)}
-          className={`px-3 md:px-4 py-2 rounded-lg text-sm md:text-base ${currentPage === i
-            ? "bg-blue-500 text-white"
-            : "bg-white dark:bg-primary-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-600"
+          className={`px-3.5 md:px-4 py-2 rounded-xl text-sm md:text-base font-semibold transition-all ${currentPage === i
+            ? "bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/40 border border-blue-400"
+            : "bg-white dark:bg-primary-800/90 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-primary-700 border border-transparent"
             }`}
         >
           {i}
