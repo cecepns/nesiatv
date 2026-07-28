@@ -51,8 +51,8 @@
 
 .featured-coverflow .swiper-slide-active .featured-coverflow-card img {
   box-shadow:
-    0 0 0 3px #c61737,
-    0 0 20px rgb(198 23 55 / 0.4),
+    0 0 0 3px #4f46e5,
+    0 0 20px rgb(79 70 229 / 0.6),
     0 16px 32px rgb(0 0 0 / 0.45);
 }
 

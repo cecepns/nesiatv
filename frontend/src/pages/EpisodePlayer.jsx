@@ -135,6 +135,19 @@ const EpisodePlayer = () => {
     }
   };
 
+  // Function to switch to next available server automatically or manually
+  const handleNextServer = () => {
+    if (streamVideos.length <= 1) {
+      toast.error('Tidak ada server alternatif lain yang tersedia.');
+      return;
+    }
+    const currentIdx = streamVideos.findIndex(v => String(v.id) === String(activeVideo?.id));
+    const nextIdx = (currentIdx + 1) % streamVideos.length;
+    const nextServer = streamVideos[nextIdx];
+    setActiveVideo(nextServer);
+    toast.info(`Mencoba berpindah ke ${nextServer.server} (${nextServer.quality})`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-12">
       <Helmet>
@@ -164,7 +177,7 @@ const EpisodePlayer = () => {
           <div className="lg:col-span-3 flex flex-col gap-6">
             
             {/* Streaming Container */}
-            <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
+            <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-slate-800 shadow-2xl group">
               {isLockedForUser ? (
                 /* Locked State Player Overlay */
                 <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-10 border border-amber-500/20">
@@ -184,14 +197,26 @@ const EpisodePlayer = () => {
                   </button>
                 </div>
               ) : activeVideo ? (
-                <iframe
-                  key={activeVideo.id}
-                  src={activeVideo.url}
-                  className="absolute inset-0 w-full h-full border-0"
-                  allowFullScreen
-                  scrolling="no"
-                  allow="autoplay; encrypted-media; fullscreen"
-                />
+                <>
+                  <iframe
+                    key={activeVideo.id}
+                    src={activeVideo.url}
+                    className="absolute inset-0 w-full h-full border-0"
+                    allowFullScreen
+                    scrolling="no"
+                    allow="autoplay; encrypted-media; fullscreen"
+                  />
+                  {streamVideos.length > 1 && (
+                    <button
+                      onClick={handleNextServer}
+                      className="absolute top-3 right-3 z-20 bg-slate-950/80 hover:bg-indigo-600 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-md border border-slate-700/80 transition flex items-center gap-1.5 shadow-lg"
+                      title="Video bermasalah? Ganti server"
+                    >
+                      <Server className="w-3.5 h-3.5" />
+                      <span>Ganti Server Saja</span>
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2">
                   <Play className="w-12 h-12 text-slate-700 animate-pulse" />
@@ -204,10 +229,20 @@ const EpisodePlayer = () => {
             <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col gap-5 shadow-xl">
               {/* Stream Servers Dropdown */}
               <div>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Server className="w-4 h-4 text-indigo-400" />
-                  Pilih Server & Resolusi Streaming
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <Server className="w-4 h-4 text-indigo-400" />
+                    Pilih Server & Resolusi Streaming
+                  </h3>
+                  {streamVideos.length > 1 && !isLockedForUser && (
+                    <button
+                      onClick={handleNextServer}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4"
+                    >
+                      Bermasalah? Switch Server Auto
+                    </button>
+                  )}
+                </div>
                 {isLockedForUser ? (
                   <p className="text-xs text-amber-400/90 flex items-center gap-1.5 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
                     <ShieldAlert className="w-4 h-4 shrink-0" />
@@ -333,14 +368,9 @@ const EpisodePlayer = () => {
               </button>
             </div>
 
-            {/* Comments */}
-            <div className="mt-4">
-              <CommentSection animeId={content.id} />
-            </div>
-
           </div>
 
-          {/* Right Area: Playlist / Sidebar Episodes */}
+          {/* Right Area: Mini Info & Number-only Episode Grid */}
           <div className="lg:col-span-1 flex flex-col gap-6">
             
             {/* Mini Anime Card */}
@@ -360,43 +390,52 @@ const EpisodePlayer = () => {
               </div>
             </div>
 
-            {/* Playlist Sidebar */}
+            {/* Episode Grid (Number Only) */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col max-h-[600px]">
               <div className="bg-slate-800/50 p-4 border-b border-slate-800 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                   <List className="w-4 h-4 text-indigo-500" />
-                  Semua Episode
+                  Daftar Episode
                 </span>
                 <span className="text-xs text-slate-500 font-semibold">{episodes.length} Eps</span>
               </div>
-              <div className="overflow-y-auto flex-1 divide-y divide-slate-800/60 custom-scrollbar">
-                {sortedEpisodes.map((ep) => {
-                  const epLocked = Boolean(ep.requires_login || data.anime_requires_login);
-                  return (
-                    <Link
-                      key={ep.id}
-                      to={`/watch/${ep.slug}`}
-                      onClick={(e) => handleEpisodeClick(e, ep)}
-                      className={`flex items-center justify-between p-3.5 transition text-xs font-medium ${
-                        ep.slug === episodeSlug
-                          ? 'bg-indigo-600/10 text-indigo-400 border-l-2 border-indigo-500'
-                          : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      <span className="truncate pr-2 flex items-center gap-1.5">
-                        {epLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
-                        <span className="truncate">{ep.title}</span>
-                      </span>
-                      <span className="text-[10px] text-slate-500 flex-shrink-0">Eps {ep.number}</span>
-                    </Link>
-                  );
-                })}
+              <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
+                  {sortedEpisodes.map((ep) => {
+                    const epLocked = Boolean(ep.requires_login || data.anime_requires_login);
+                    const isActive = ep.slug === episodeSlug;
+                    return (
+                      <Link
+                        key={ep.id}
+                        to={`/watch/${ep.slug}`}
+                        onClick={(e) => handleEpisodeClick(e, ep)}
+                        title={ep.title || `Episode ${ep.number}`}
+                        className={`relative flex items-center justify-center h-10 rounded-lg text-xs font-bold transition border ${
+                          isActive
+                            ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                            : 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border-slate-700/60'
+                        }`}
+                      >
+                        {epLocked && (
+                          <Lock className="w-2.5 h-2.5 text-amber-400 absolute top-1 right-1" />
+                        )}
+                        <span>{ep.number}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
           </div>
 
         </div>
+
+        {/* Section Komentar Paling Bawah */}
+        <div className="mt-12 pt-8 border-t border-slate-800/80">
+          <CommentSection animeId={content.id} />
+        </div>
+
       </div>
 
       <LoginModal 

@@ -23,7 +23,7 @@ import { useAuth } from "../contexts/AuthContext";
 /** Tombol header — latar sky/cyan (seperti Content); bayangan offset biru */
 const contentBtnTrans = "transition-all duration-200";
 
-const contentFilterActive = `rounded-xl border ${contentBtnTrans} border-sky-500/50 bg-sky-600 text-white shadow-[0_7px_0_0_#1a56db] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_7px_0_0_#0e4fc4]`;
+const contentFilterActive = `relative rounded-xl border ${contentBtnTrans} border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]`;
 
 /** Nav desktop — sama gaya dengan tombol tema (dipakai juga di halaman lain, mis. genre di AnimeDetail) */
 export const headerNavLinkClass = `inline-flex items-center justify-center ${contentFilterActive} px-4 py-2.5 text-sm font-semibold hover:brightness-[1.03] dark:hover:brightness-110`;
@@ -473,7 +473,7 @@ const Header = () => {
                       type="button"
                       onClick={() => handleNavigate(item.path)}
                       className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm font-semibold transition-all duration-200 ${active
-                        ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_5px_0_0_#1a56db] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50"
+                        ? "border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50"
                         : "border-transparent text-gray-700 hover:border-gray-200 hover:bg-gray-50 dark:text-gray-200 dark:hover:border-white/10 dark:hover:bg-white/5"
                         }`}
                     >

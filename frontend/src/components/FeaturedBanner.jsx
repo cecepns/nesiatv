@@ -381,7 +381,7 @@ const FeaturedBanner = ({ items = [], loading = false, onReadLatest }) => {
                 type="button"
                 onClick={() => desktopSwiperRef.current?.slideToLoop(index)}
                 className={`shrink-0 rounded-full transition-all ${index === desktopIndex
-                  ? "h-3 w-8 bg-sky-600 dark:bg-white"
+                  ? "h-3 w-8 bg-gradient-to-r from-indigo-600 to-blue-700 dark:from-indigo-500 dark:to-blue-600"
                   : "h-3 w-3 bg-slate-400/90 hover:bg-slate-500 dark:bg-white/45 dark:hover:bg-white/70"
                   }`}
                 aria-label={`Ke slide ${index + 1}`}
