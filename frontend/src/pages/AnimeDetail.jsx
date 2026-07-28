@@ -16,6 +16,7 @@ const AnimeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const isLockedValue = (val) => val === true || val === 1 || val === '1' || val === 'true';
@@ -26,6 +27,38 @@ const AnimeDetail = () => {
       e.preventDefault();
       toast.info('Episode ini wajib login. Silakan login terlebih dahulu untuk menonton.');
       setLoginModalOpen(true);
+    }
+  };
+
+  const handlePlaylistClick = async () => {
+    if (!isAuthenticated) {
+      toast.warning('Silakan login terlebih dahulu untuk menyimpan ke playlist');
+      setLoginModalOpen(true);
+      return;
+    }
+    if (!anime?.id) return;
+    try {
+      setPlaylistLoading(true);
+      const res = await apiClient.getReadlists();
+      let lists = Array.isArray(res?.data) ? res.data : [];
+      let targetList = lists[0];
+
+      if (!targetList) {
+        const createRes = await apiClient.createReadlist({ title: 'Playlist Favorit Saya' });
+        targetList = createRes?.data;
+      }
+
+      if (targetList?.id) {
+        await apiClient.addReadlistItems(targetList.id, { manga_ids: [anime.id] });
+        toast.success(`Anime berhasil ditambahkan ke playlist "${targetList.title}"!`);
+      } else {
+        navigate('/library?tab=readlist');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menambahkan ke playlist');
+    } finally {
+      setPlaylistLoading(false);
     }
   };
 
@@ -291,9 +324,8 @@ const AnimeDetail = () => {
 
           {/* Playlist Button */}
           <button
-            onClick={() => {
-              toast.info('Fitur playlist akan segera hadir!');
-            }}
+            onClick={handlePlaylistClick}
+            disabled={playlistLoading}
             className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl font-semibold text-slate-200 bg-[#151928] hover:bg-[#1c2236] border border-slate-800/80 transition-all text-sm sm:text-base shadow-md"
           >
             <ListPlus className="w-5 h-5" />

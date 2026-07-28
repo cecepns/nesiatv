@@ -24,15 +24,15 @@ import ChapterAccessLink from "../components/ChapterAccessLink";
 /** Tombol — selaras Content.jsx (chip + bayangan offset) */
 const contentBtnTrans = "transition-all duration-200";
 const contentFilterInactive = `rounded-xl border ${contentBtnTrans} border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800`;
-const contentFilterActive = `rounded-xl border ${contentBtnTrans} border-purple-500/60 bg-gradient-to-r from-indigo-600 to-blue-700 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-gradient-to-r dark:from-indigo-600 dark:to-blue-700 dark:text-white dark:shadow-[0_4px_0_0_#9333ea]`;
-const contentCtaPrimary = `rounded-xl border border-purple-500/40 bg-gradient-to-r from-indigo-600 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_0_0_#9333ea] ${contentBtnTrans} hover:-translate-y-0.5 hover:shadow-[0_6px_0_0_#9333ea] active:translate-y-0.5 active:shadow-[0_3px_0_0_#9333ea] dark:border-purple-400/30 dark:bg-gradient-to-r dark:from-indigo-600 dark:to-blue-700 dark:text-white dark:shadow-[0_5px_0_0_#9333ea] dark:hover:shadow-[0_6px_0_0_#9333ea] dark:active:shadow-[0_3px_0_0_#9333ea] dark:hover:brightness-110`;
+const contentFilterActive = `rounded-xl border ${contentBtnTrans} border-purple-500/60 bg-sky-600 text-white shadow-[0_4px_0_0_#9333ea] dark:border-purple-400/50 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#9333ea]`;
+const contentCtaPrimary = `rounded-xl border border-purple-500/50 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_0_0_#9333ea] ${contentBtnTrans} hover:-translate-y-0.5 hover:shadow-[0_6px_0_0_#9333ea] active:translate-y-0.5 active:shadow-[0_3px_0_0_#9333ea] dark:border-purple-400/40 dark:bg-[#0a2d52] dark:text-cyan-50 dark:shadow-[0_5px_0_0_#9333ea] dark:hover:shadow-[0_6px_0_0_#9333ea] dark:active:shadow-[0_3px_0_0_#9333ea] dark:hover:brightness-110`;
 const paginationBtnClass = `${contentFilterInactive} px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:shadow-[0_3px_0_0_#e2e8f0] dark:disabled:opacity-40`;
 const dangerIconBtnClass = `rounded-xl border border-red-500/40 bg-red-600 p-2 text-white shadow-[0_3px_0_0_rgb(127,29,29)] transition-all duration-200 hover:brightness-105 active:translate-y-px active:shadow-[0_2px_0_0_rgb(127,29,29)] dark:border-red-500/30 dark:shadow-[0_3px_0_0_rgb(69,10,10)]`;
 const dangerOutlineBtnClass = `inline-flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_0_0_rgb(127,29,29)] ${contentBtnTrans} hover:brightness-105 active:translate-y-px active:shadow-[0_2px_0_0_rgb(127,29,29)] dark:shadow-[0_4px_0_0_rgb(69,10,10)]`;
 const linkChipBtnClass = `max-w-fit rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-left text-xs font-medium text-slate-800 shadow-[0_2px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-px hover:bg-white hover:shadow-[0_3px_0_0_#cbd5e1] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_2px_0_0_#1e3a5f] dark:hover:bg-primary-700 md:text-sm`;
 
 const VALID_TABS = ["bookmark", "readlist", "history", "popular"];
-const VALID_POPULAR_TYPES = ["manga", "manhwa", "manhua"];
+const VALID_POPULAR_TYPES = ["anime", "donghua", "film"];
 
 const Library = () => {
   const navigate = useNavigate();
@@ -40,10 +40,10 @@ const Library = () => {
   const { isAuthenticated } = useAuth();
   const tabParam = (searchParams.get("tab") || "popular").toLowerCase();
   const activeTabId = VALID_TABS.includes(tabParam) ? tabParam : "popular";
-  const popularParam = (searchParams.get("popular") || "manga").toLowerCase();
+  const popularParam = (searchParams.get("popular") || "anime").toLowerCase();
   const activePopularType = VALID_POPULAR_TYPES.includes(popularParam)
     ? popularParam
-    : "manga";
+    : "anime";
 
   const setActiveTab = (id) => {
     const map = {
@@ -57,13 +57,13 @@ const Library = () => {
     next.set("tab", nextTab);
     if (nextTab !== "popular") next.delete("popular");
     else if (!VALID_POPULAR_TYPES.includes((next.get("popular") || "").toLowerCase())) {
-      next.set("popular", "manga");
+      next.set("popular", "anime");
     }
     setSearchParams(next);
   };
 
   const setPopularType = (type) => {
-    const nextType = VALID_POPULAR_TYPES.includes(type) ? type : "manga";
+    const nextType = VALID_POPULAR_TYPES.includes(type) ? type : "anime";
     const next = new URLSearchParams(searchParams);
     next.set("tab", "popular");
     next.set("popular", nextType);
@@ -321,7 +321,7 @@ const Library = () => {
   const tabs = [
     { id: "popular", label: "Populer", icon: Flame },
     { id: "bookmark", label: "Bookmark", icon: Bookmark },
-    { id: "readlist", label: "Readlist", icon: ListChecks },
+    { id: "readlist", label: "Playlist", icon: ListChecks },
     { id: "history", label: "History", icon: History },
   ];
 
@@ -521,9 +521,9 @@ const Library = () => {
                       />
                     </div>
                     <div className="p-6 text-center">
-                      <h2 className="text-2xl font-bold text-white mb-2">Readlist</h2>
+                      <h2 className="text-2xl font-bold text-white mb-2">Playlist</h2>
                       <p className="text-gray-300 mb-6 text-sm">
-                        Login untuk membuat readlist dan mengatur daftar baca kamu
+                        Login untuk membuat playlist dan mengatur daftar tontonan kamu
                       </p>
                       <button
                         type="button"
@@ -549,7 +549,7 @@ const Library = () => {
                   {readlistDetailLoading || !readlistDetail ? (
                     <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto" />
-                      <p className="text-gray-500 dark:text-gray-400 mt-4">Memuat readlist...</p>
+                      <p className="text-gray-500 dark:text-gray-400 mt-4">Memuat playlist...</p>
                     </div>
                   ) : (
                     <>
@@ -559,7 +559,7 @@ const Library = () => {
                             {readlistDetail.title}
                           </h2>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {(readlistDetail.items || []).length} anime di readlist ini
+                            {(readlistDetail.items || []).length} anime di playlist ini
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -583,14 +583,14 @@ const Library = () => {
                             className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold ${contentCtaPrimary}`}
                           >
                             <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                            Tambah manga
+                            Tambah anime
                           </button>
                           <button
                             type="button"
                             onClick={() => {
                               if (
                                 window.confirm(
-                                  `Hapus readlist "${readlistDetail.title}" beserta isinya?`,
+                                  `Hapus playlist "${readlistDetail.title}" beserta isinya?`,
                                 )
                               ) {
                                 apiClient
@@ -606,7 +606,7 @@ const Library = () => {
                             className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold ${dangerOutlineBtnClass}`}
                           >
                             <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
-                            Hapus readlist
+                            Hapus playlist
                           </button>
                         </div>
                       </div>
@@ -614,7 +614,7 @@ const Library = () => {
                         <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
                           <ListChecks className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                           <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">
-                            Readlist masih kosong
+                            Playlist masih kosong
                           </p>
                           <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
                             Tambahkan manga lewat pencarian (bisa pilih banyak sekaligus)
