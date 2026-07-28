@@ -14,6 +14,7 @@ import {
   Sparkles,
   Swords,
   Theater,
+  Wand2,
 } from "lucide-react";
 import UpdateSection from "../components/UpdateSection";
 import PopularSection from "../components/PopularSection";
@@ -50,6 +51,36 @@ const Home = () => {
   const [popupSettingsReady, setPopupSettingsReady] = useState(false);
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          toast.success("Aplikasi berhasil dipasang!");
+        }
+        setDeferredPrompt(null);
+      } catch (err) {
+        console.error("Install prompt error:", err);
+        setInstallModalOpen(true);
+      }
+    } else {
+      setInstallModalOpen(true);
+    }
+  };
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://nesiatv.com";
   const shareTitle =
     "Baca anime, manga, manhwa, dan manhua Bahasa Indonesia di Nesiatv!";
@@ -288,7 +319,7 @@ const Home = () => {
 
           <button
             type="button"
-            onClick={() => setInstallModalOpen(true)}
+            onClick={handleInstallPwa}
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
           >
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-inner md:h-14 md:w-14">
