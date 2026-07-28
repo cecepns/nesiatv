@@ -400,13 +400,13 @@ const AnimeDetail = () => {
                       {/* Episode Info */}
                       <div className="flex flex-col min-w-0">
                         <h3 className="font-bold text-sm sm:text-base text-slate-100 group-hover:text-indigo-400 transition truncate leading-snug">
-                          {ep.title || `Episode ${ep.episode_number}`}
+                          Episode {ep.episode_number || ep.number || idx + 1}
                         </h3>
                         <p className="text-xs text-slate-400 mt-1">
                           {ep.release_time || ep.created_at ? (
                             <span>{ep.release_time || 'Baru saja'}</span>
                           ) : (
-                            <span>Episode {ep.episode_number}</span>
+                            <span>Terbaru</span>
                           )}
                         </p>
 

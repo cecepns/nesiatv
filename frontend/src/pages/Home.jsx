@@ -14,9 +14,7 @@ import {
   Sparkles,
   Swords,
   Theater,
-  Wand2,
 } from "lucide-react";
-import ProjectSection from "../components/ProjectSection";
 import UpdateSection from "../components/UpdateSection";
 import PopularSection from "../components/PopularSection";
 import FeaturedBanner from "../components/FeaturedBanner";
@@ -439,10 +437,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Project Section (If any) */}
-        <div data-aos="fade-up" data-aos-delay="150">
-          <ProjectSection />
-        </div>
+
 
         {/* 2. Anime Section */}
         <div data-aos="fade-up" data-aos-delay="160">
