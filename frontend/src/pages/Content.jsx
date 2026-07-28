@@ -248,8 +248,20 @@ const Content = () => {
 
       const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
       setMangaList(list);
-      const totalP = Number(data?.meta?.total_pages || data?.pagination?.total_pages) || 1;
-      setTotalPages(Math.max(1, totalP));
+      
+      let totalP = Number(data?.meta?.total_pages || data?.pagination?.total_pages);
+      if (!totalP && data?.meta?.total) {
+        totalP = Math.ceil(Number(data.meta.total) / 24);
+      }
+      if (!totalP && data?.pagination?.total) {
+        totalP = Math.ceil(Number(data.pagination.total) / 24);
+      }
+      if (!totalP && list.length >= 24) {
+        // Fallback: If returned page has 24 items, allow navigating to at least next page
+        totalP = currentPage + 1;
+      }
+
+      setTotalPages(Math.max(1, totalP || 1));
     } catch (error) {
       console.error("Error fetching manga:", error);
     } finally {

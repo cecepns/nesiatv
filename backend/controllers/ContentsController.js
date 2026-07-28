@@ -150,10 +150,38 @@ const getContents = async (req, res) => {
       updated_at: a.updated_at,
     }));
 
-    // Cache list
-    contentsListCache.set(cacheKey, formattedData);
+    // Count query for pagination
+    let countQuery = 'SELECT COUNT(DISTINCT a.id) as total FROM anime a';
+    if (genreArray.length > 0) {
+      countQuery += ' INNER JOIN anime_genres ag ON a.id = ag.anime_id INNER JOIN categories cat ON ag.category_id = cat.id';
+    }
+    countQuery += ' WHERE ' + whereConditions.join(' AND ');
 
-    return res.json({ status: true, data: formattedData });
+    const [countRows] = await db.execute(countQuery, params.slice(0, -2));
+    const totalItems = countRows[0]?.total || 0;
+    const totalPages = Math.ceil(totalItems / limit) || 1;
+
+    const responsePayload = {
+      status: true,
+      data: formattedData,
+      meta: {
+        total: totalItems,
+        total_pages: totalPages,
+        current_page: parseInt(page, 10) || 1,
+        per_page: limit,
+      },
+      pagination: {
+        total: totalItems,
+        total_pages: totalPages,
+        current_page: parseInt(page, 10) || 1,
+        per_page: limit,
+      },
+    };
+
+    // Cache list
+    contentsListCache.set(cacheKey, responsePayload);
+
+    return res.json(responsePayload);
   } catch (error) {
     console.error('Error in getContents:', error);
     return res.status(500).json({ status: false, error: 'Internal server error' });
