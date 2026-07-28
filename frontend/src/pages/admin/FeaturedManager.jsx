@@ -35,6 +35,25 @@ const FeaturedManager = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType]);
 
+  useEffect(() => {
+    if (showAddForm && searchResults === null) {
+      fetchMangaList('');
+    }
+  }, [showAddForm, searchResults]);
+
+  const fetchMangaList = async (query = '') => {
+    setSearching(true);
+    try {
+      const response = await apiClient.searchFeaturedManga(query.trim(), 50);
+      setSearchResults(Array.isArray(response?.manga) ? response.manga : []);
+    } catch (error) {
+      console.error('Error searching manga:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const fetchFeaturedItems = async () => {
     try {
       setLoading(true);
@@ -49,19 +68,7 @@ const FeaturedManager = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setSearching(true);
-    try {
-      const q = searchQuery.trim();
-      const response = await apiClient.searchFeaturedManga(q, 50);
-      setSearchResults(Array.isArray(response?.manga) ? response.manga : []);
-    } catch (error) {
-      console.error('Error searching manga:', error);
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
+    fetchMangaList(searchQuery);
   };
 
   const handleSelectManga = (manga) => {
@@ -192,7 +199,7 @@ const FeaturedManager = () => {
       id: item.anime_id,
       title: item.title,
       slug: item.slug,
-      cover: item.cover,
+      cover: item.cover || item.thumbnail,
       rating: item.rating,
       total_views: item.total_views
     };

@@ -17,10 +17,8 @@ const AdminLayout = ({ children }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, path: '/admin/dashboard' },
     { id: 'categories', label: 'Kategori', icon: List, path: '/admin/categories' },
-    { id: 'manga', label: 'Manga', icon: BookOpen, path: '/admin/manga' },
-    { id: 'ikiru-sync', label: 'Ikiru Sync', icon: CloudDownload, path: '/admin/ikiru-sync' },
-    { id: 'apanime-sync', label: 'Apanime Sync', icon: CloudDownload, path: '/admin/apanime-sync' },
-    { id: 'migration', label: 'Manga Migration', icon: Database, path: '/admin/migration' },
+    { id: 'anime', label: 'Anime', icon: BookOpen, path: '/admin/manga' },
+    { id: 'otakudesu-sync', label: 'Otakudesu Sync', icon: CloudDownload, path: '/admin/otakudesu-sync' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'orders', label: 'Order Premium', icon: ReceiptText, path: '/admin/orders' },
     { id: 'stickers', label: 'Stiker', icon: Sticker, path: '/admin/stickers' },

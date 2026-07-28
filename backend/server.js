@@ -238,6 +238,7 @@ app.use('/api/stickers', stickerRoutes);
 app.use('/api/live-chat', liveChatRoutes);
 app.use('/api', imageProxyRoutes);
 app.use('/api/otakudesu', otakudesuRoutes);
+app.get('/api/chapters/schedule', require('./controllers/ChapterScheduleController').getSchedule);
 app.use('/', sitemapRoutes);
 
 
@@ -428,8 +429,8 @@ const runSqlMigration = async () => {
        ('redirect_script_urls', '["https://mbuh.my.id/siap/1770790072377-nesiatv.js"]')
      ON DUPLICATE KEY UPDATE \`value\` = \`value\``,
     'ALTER TABLE ads ADD COLUMN expired_at DATETIME NULL',
-    'ALTER TABLE chapters ADD COLUMN scheduled_release_at DATETIME NULL AFTER updated_at',
-    'ALTER TABLE chapters ADD INDEX idx_chapters_scheduled_release (scheduled_release_at)',
+    'ALTER TABLE episodes ADD COLUMN scheduled_release_at DATETIME NULL AFTER updated_at',
+    'ALTER TABLE episodes ADD INDEX idx_episodes_scheduled_release (scheduled_release_at)',
     'ALTER TABLE settings MODIFY COLUMN `value` TEXT NULL',
   ];
 
@@ -437,13 +438,15 @@ const runSqlMigration = async () => {
     try {
       await db.execute(statement);
     } catch (error) {
-      // Ignore duplicate column when migration already applied.
+      // Ignore duplicate column or missing old table when migration already applied.
       if (
         error &&
         (error.code === 'ER_DUP_FIELDNAME' ||
           error.errno === 1060 ||
           error.code === 'ER_DUP_KEYNAME' ||
-          error.errno === 1061)
+          error.errno === 1061 ||
+          error.code === 'ER_NO_SUCH_TABLE' ||
+          error.errno === 1146)
       ) {
         continue;
       }

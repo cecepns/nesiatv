@@ -9,11 +9,18 @@ import {
   Heart,
   Crown,
   ChevronRight,
+  Tv,
+  Film,
+  Sparkles,
+  Swords,
+  Theater,
+  Wand2,
 } from "lucide-react";
 import ProjectSection from "../components/ProjectSection";
 import UpdateSection from "../components/UpdateSection";
 import PopularSection from "../components/PopularSection";
 import FeaturedBanner from "../components/FeaturedBanner";
+import HomeCategorySection from "../components/HomeCategorySection";
 import "../styles/featured-banner.css";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -180,7 +187,7 @@ const Home = () => {
             <div className="relative max-w-64 w-full">
               <button
                 onClick={handleClosePopupBanner}
-                className="absolute -top-2 -right-2 z-10 p-1.5 rounded-full bg-red-900 dark:bg-red-800 text-white hover:bg-gray-700 dark:hover:bg-gray-600 shadow-lg transition-colors"
+                className="absolute -top-2 -right-2 z-10 p-1.5 rounded-full bg-blue-700 dark:bg-blue-800 text-white hover:bg-blue-800 dark:hover:bg-blue-900 shadow-lg transition-colors"
                 aria-label="Tutup banner"
               >
                 <X className="h-5 w-5" />
@@ -432,19 +439,52 @@ const Home = () => {
           </div>
         )}
 
-        {/* Project (is_project) — hidden when empty */}
-        <div data-aos="fade-up" data-aos-delay="175">
+        {/* Project Section (If any) */}
+        <div data-aos="fade-up" data-aos-delay="150">
           <ProjectSection />
         </div>
 
-        {/* Update Section */}
+        {/* 2. Anime Section */}
+        <div data-aos="fade-up" data-aos-delay="160">
+          <HomeCategorySection
+            title="Anime"
+            icon={Tv}
+            iconBgGradient="from-indigo-600 to-blue-600"
+            filterParams={{ type: "anime" }}
+            viewAllUrl="/content?type=anime"
+          />
+        </div>
+
+        {/* 3. FILM Section */}
+        <div data-aos="fade-up" data-aos-delay="175">
+          <HomeCategorySection
+            title="FILM"
+            icon={Film}
+            iconBgGradient="from-rose-600 to-pink-600"
+            filterParams={{ type: "film" }}
+            viewAllUrl="/content?type=film"
+          />
+        </div>
+
+        {/* 4. Donghua Section */}
+        <div data-aos="fade-up" data-aos-delay="190">
+          <HomeCategorySection
+            title="Donghua"
+            icon={Sparkles}
+            iconBgGradient="from-amber-500 to-red-500"
+            filterParams={{ type: "donghua" }}
+            viewAllUrl="/content?type=donghua"
+          />
+        </div>
+
+        {/* 5. New Episode (Update Section) */}
         <div data-aos="fade-up" data-aos-delay="200">
           <UpdateSection />
         </div>
 
         {/* Populer Ads - 4 ads above Popular Section */}
         {populerAds.length > 0 && (
-          <div className="mb-8" data-aos="fade-up" data-aos-delay="250">
+          <div className="mb-8" data-aos="fade-up" data-aos-delay="220">
             <AdBanner
               ads={populerAds}
               layout="grid"
@@ -453,9 +493,53 @@ const Home = () => {
           </div>
         )}
 
-        {/* Popular Section */}
-        <div data-aos="fade-up" data-aos-delay="300">
+        {/* 6. Populer Section */}
+        <div data-aos="fade-up" data-aos-delay="240">
           <PopularSection />
+        </div>
+
+        {/* 7. Genre Action */}
+        <div data-aos="fade-up" data-aos-delay="260">
+          <HomeCategorySection
+            title="Genre Action"
+            icon={Swords}
+            iconBgGradient="from-red-600 to-orange-600"
+            filterParams={{ genre: "action" }}
+            viewAllUrl="/content?genre=Action"
+          />
+        </div>
+
+        {/* 8. Genre Drama */}
+        <div data-aos="fade-up" data-aos-delay="280">
+          <HomeCategorySection
+            title="Genre Drama"
+            icon={Theater}
+            iconBgGradient="from-purple-600 to-indigo-600"
+            filterParams={{ genre: "drama" }}
+            viewAllUrl="/content?genre=Drama"
+          />
+        </div>
+
+        {/* 9. Genre Fantasy */}
+        <div data-aos="fade-up" data-aos-delay="300">
+          <HomeCategorySection
+            title="Genre Fantasy"
+            icon={Wand2}
+            iconBgGradient="from-emerald-600 to-teal-600"
+            filterParams={{ genre: "fantasy" }}
+            viewAllUrl="/content?genre=Fantasy"
+          />
+        </div>
+
+        {/* 10. Genre Romance */}
+        <div data-aos="fade-up" data-aos-delay="320">
+          <HomeCategorySection
+            title="Genre Romance"
+            icon={Heart}
+            iconBgGradient="from-pink-500 to-rose-500"
+            filterParams={{ genre: "romance" }}
+            viewAllUrl="/content?genre=Romance"
+          />
         </div>
 
         {/* Home Footer Ads - 2 ads at bottom */}

@@ -1,5 +1,5 @@
 {
-  "name": "komiknesia-backend",
+  "name": "nesiatv-backend",
   "version": "1.0.0",
   "description": "Komiknesia Backend API",
   "main": "server.js",

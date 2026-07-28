@@ -1,12 +1,8 @@
-// export const API_BASE_URL = 'https://be-api.nesiatv.net/api';
-// export const API_BASE_URL_WITHOUT_API = 'https://be-api.nesiatv.net';
-// export const API_BASE_URL = 'http://localhost:8080/api';
-// export const API_BASE_URL_WITHOUT_API = 'http://localhost:8080';
 
-// export const API_BASE_URL = 'https://be-api-node.nesiatv.net//api';
-// export const API_BASE_URL_WITHOUT_API = 'https://be-api-node.nesiatv.net/';
-export const API_BASE_URL = 'https://api-be.nesiatv.my.id/api';
-export const API_BASE_URL_WITHOUT_API = 'https://api-be.nesiatv.my.id/';
+export const API_BASE_URL = 'http://localhost:3001/api';
+export const API_BASE_URL_WITHOUT_API = 'http://localhost:3001/';
+// export const API_BASE_URL = 'https://api-be.nesiatv.my.id/api';
+// export const API_BASE_URL_WITHOUT_API = 'https://api-be.nesiatv.my.id/';
 
 /** Origin for static files (no trailing slash). Same host as API, path /uploads is served by backend. */
 const STATIC_ORIGIN = API_BASE_URL_WITHOUT_API.replace(/\/+$/, '');
@@ -484,6 +480,11 @@ class APIClient {
     });
   }
 
+  // Aliases for manga/anime backward compatibility
+  createManga(formData) { return this.createAnime(formData); }
+  updateManga(id, formData) { return this.updateAnime(id, formData); }
+  deleteManga(id) { return this.deleteAnime(id); }
+
   // Votes (by slug; token sent when logged in so vote is per-user)
   getVotes(slug) {
     return this.request(`/votes/${encodeURIComponent(slug)}`);
@@ -519,17 +520,27 @@ class APIClient {
     return this.request(`/episodes/anime/${animeId}`);
   }
 
-  createEpisode(animeId, formData) {
+  createEpisode(animeId, data) {
+    if (data instanceof FormData) {
+      data.append('anime_id', animeId);
+      return this.request('/episodes', {
+        method: 'POST',
+        headers: {},
+        body: data,
+      });
+    }
     return this.request('/episodes', {
       method: 'POST',
-      body: { anime_id: animeId, ...formData }
+      body: { anime_id: animeId, ...data },
     });
   }
 
-  updateEpisode(episodeId, formData) {
+  updateEpisode(episodeId, data) {
+    const isFormData = data instanceof FormData;
     return this.request(`/episodes/${episodeId}`, {
       method: 'PUT',
-      body: formData,
+      ...(isFormData ? { headers: {} } : {}),
+      body: data,
     });
   }
 
@@ -539,15 +550,30 @@ class APIClient {
     });
   }
 
-  // Episode Videos / Sources
+  // Aliases for chapter/episode backward compatibility
+  getChapters(animeId) { return this.getEpisodes(animeId); }
+  createChapter(animeId, data) { return this.createEpisode(animeId, data); }
+  updateChapter(episodeId, data) { return this.updateEpisode(episodeId, data); }
+  deleteChapter(episodeId) { return this.deleteEpisode(episodeId); }
+  batchToggleEpisodeLogin(animeId, requires_login) {
+    return this.request('/episodes/batch-login', {
+      method: 'PUT',
+      body: { anime_id: animeId, requires_login },
+    });
+  }
+
+
+  // Episode Videos / Stream Sources
   getEpisodeVideos(episodeId) {
     return this.request(`/episodes/${episodeId}/videos`);
   }
 
-  addEpisodeVideo(formData) {
+  addEpisodeVideo(data) {
+    const isFormData = data instanceof FormData;
     return this.request('/episodes/videos', {
       method: 'POST',
-      body: formData,
+      ...(isFormData ? { headers: {} } : {}),
+      body: data,
     });
   }
 
@@ -1021,6 +1047,10 @@ class APIClient {
   }
 
   // Contents (Manga List with filters)
+  getChapterSchedule(weekOffset = 0) {
+    return this.request(`/chapters/schedule?week=${weekOffset}`);
+  }
+
   getContents(params = {}) {
     const queryParams = new URLSearchParams();
     if (params.page) queryParams.append('page', params.page.toString());

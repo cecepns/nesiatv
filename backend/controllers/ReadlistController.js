@@ -13,7 +13,7 @@ async function resolveMangaIds(body) {
   }
   for (const s of rawSlugs) {
     if (typeof s !== 'string' || !s.trim()) continue;
-    const [rows] = await db.execute('SELECT id FROM manga WHERE slug = ? LIMIT 1', [s.trim()]);
+    const [rows] = await db.execute('SELECT id FROM anime WHERE slug = ? LIMIT 1', [s.trim()]);
     if (rows.length) ids.add(rows[0].id);
   }
   return [...ids];
@@ -85,7 +85,7 @@ const show = async (req, res) => {
     const [items] = await db.execute(
       `SELECT m.id AS anime_id, m.slug, m.title, m.thumbnail AS cover, rm.created_at
        FROM user_readlist_manga rm
-       JOIN manga m ON m.id = rm.anime_id
+       JOIN anime m ON m.id = rm.anime_id
        WHERE rm.readlist_id = ?
        ORDER BY rm.created_at DESC`,
       [readlistId]

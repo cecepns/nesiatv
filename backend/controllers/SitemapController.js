@@ -86,14 +86,14 @@ const sitemapMain = async (req, res) => {
 
     const [mangaRows] = await db.execute(`
       SELECT slug, updated_at 
-      FROM manga 
+      FROM anime 
       WHERE slug IS NOT NULL AND slug != ''
       ORDER BY updated_at DESC
     `);
 
     const [chapterRows] = await db.execute(`
       SELECT c.slug, c.updated_at
-      FROM chapters c
+      FROM episodes c
       WHERE c.slug IS NOT NULL AND c.slug != ''
       ORDER BY c.updated_at DESC
     `);
@@ -203,7 +203,7 @@ const sitemapManga = async (req, res) => {
 
     const [mangaRows] = await db.execute(`
       SELECT slug, updated_at 
-      FROM manga 
+      FROM anime 
       WHERE slug IS NOT NULL AND slug != ''
       ORDER BY updated_at DESC
     `);
@@ -254,10 +254,10 @@ const sitemapChapters = async (req, res) => {
 
     const [chapterRows] = await db.execute(`
       SELECT c.slug, c.updated_at
-      FROM chapters c
+      FROM episodes c
       WHERE c.anime_id IN (
         SELECT id FROM (
-          SELECT id FROM manga
+          SELECT id FROM anime
           ORDER BY updated_at DESC
           LIMIT 25
         ) as temp
@@ -303,11 +303,11 @@ const sitemapChapters = async (req, res) => {
 const sitemapStats = async (req, res) => {
   try {
     const [mangaCount] = await db.execute(`
-      SELECT COUNT(*) as count FROM manga WHERE slug IS NOT NULL AND slug != ''
+      SELECT COUNT(*) as count FROM anime WHERE slug IS NOT NULL AND slug != ''
     `);
 
     const [chapterCount] = await db.execute(`
-      SELECT COUNT(*) as count FROM chapters WHERE slug IS NOT NULL AND slug != ''
+      SELECT COUNT(*) as count FROM episodes WHERE slug IS NOT NULL AND slug != ''
     `);
 
     res.json({

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronDown, ChevronLeft, ChevronRight, Filter, SlidersHorizontal, LayoutGrid, List } from "lucide-react";
 import LazyImage from "../components/LazyImage";
 import AdBanner from "../components/AdBanner";
 import { useAds } from "../hooks/useAds";
@@ -13,6 +13,9 @@ import ChapterAccessLink from "../components/ChapterAccessLink";
 const statusOptions = ["All", "Ongoing", "Completed", "Hiatus"];
 const typeOptions = [
   { label: "All", value: "All", country: null },
+  { label: "Anime", value: "Anime", country: null, apiType: "anime" },
+  { label: "Film", value: "Film", country: null, apiType: "film" },
+  { label: "Donghua", value: "Donghua", country: null, apiType: "donghua" },
   { label: "Comic", value: "Comic", country: null, apiType: "comic" },
   { label: "Manga", value: "Manga", country: "JP", apiType: "manga" },
   { label: "Manhua", value: "Manhua", country: "CN", apiType: "manhua" },
@@ -26,11 +29,6 @@ const projectFilterOptions = [
   { label: "Bukan project", value: "false" },
 ];
 
-const sourceOptions = [
-  { label: "Semua Source", value: "all" },
-  { label: "Source 1", value: "kiryu" },
-  { label: "Source 2", value: "apanime" },
-];
 
 const Content = () => {
   const navigate = useNavigate();
@@ -59,24 +57,29 @@ const Content = () => {
   const selectedOrder = orderOptions.includes(searchParams.get("order") || "")
     ? searchParams.get("order")
     : "Update";
-
   const projectParam = searchParams.get("project");
   const selectedProject =
     projectParam === "true" || projectParam === "false" ? projectParam : "all";
 
-  const selectedSource = sourceOptions.some(
-    (opt) => opt.value === (searchParams.get("source") || ""),
-  )
-    ? searchParams.get("source")
-    : "all";
+  const [showMobileFilterModal, setShowMobileFilterModal] = useState(false);
+  const [cardLayout, setCardLayout] = useState("vertical");
 
-  // Mobile dropdown states
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedStatus !== "All") count++;
+    if (selectedType !== "All") count++;
+    if (selectedOrder !== "Update") count++;
+    if (selectedProject !== "all") count++;
+    if (selectedGenres.length > 0) count += selectedGenres.length;
+    if (searchQuery.trim()) count++;
+    return count;
+  }, [selectedStatus, selectedType, selectedOrder, selectedProject, selectedGenres, searchQuery]);
+
   const [showGenreDropdown, setShowGenreDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showOrderDropdown, setShowOrderDropdown] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
-  const [showSourceDropdown, setShowSourceDropdown] = useState(false);
 
   // Refs for click outside detection
   const genreDropdownRef = useRef(null);
@@ -84,7 +87,6 @@ const Content = () => {
   const typeDropdownRef = useRef(null);
   const orderDropdownRef = useRef(null);
   const projectDropdownRef = useRef(null);
-  const sourceDropdownRef = useRef(null);
 
   // Load genres from API
   useEffect(() => {
@@ -197,17 +199,6 @@ const Content = () => {
     [updateSearchParams],
   );
 
-  const setSourceFilter = useCallback(
-    (source) => {
-      updateSearchParams((params) => {
-        if (source === "all") params.delete("source");
-        else params.set("source", source);
-        params.delete("page");
-      });
-    },
-    [updateSearchParams],
-  );
-
   const fetchManga = useCallback(async () => {
     setLoading(true);
     try {
@@ -221,11 +212,6 @@ const Content = () => {
         params.append("project", "true");
       } else if (selectedProject === "false") {
         params.append("project", "false");
-      }
-
-      // Add source filter
-      if (selectedSource !== "all") {
-        params.append("source", selectedSource);
       }
 
       // Common parameters
@@ -258,10 +244,10 @@ const Content = () => {
       );
       const data = await response.json();
 
-      if (data.status && Array.isArray(data.data)) {
-        setMangaList(data.data);
-        setTotalPages(Math.max(1, Number(data.meta?.total_pages) || 1));
-      }
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setMangaList(list);
+      const totalP = Number(data?.meta?.total_pages || data?.pagination?.total_pages) || 1;
+      setTotalPages(Math.max(1, totalP));
     } catch (error) {
       console.error("Error fetching manga:", error);
     } finally {
@@ -275,7 +261,6 @@ const Content = () => {
     selectedOrder,
     searchQuery,
     selectedProject,
-    selectedSource,
   ]);
 
   // Load manga based on filters
@@ -320,12 +305,6 @@ const Content = () => {
       ) {
         setShowProjectDropdown(false);
       }
-      if (
-        sourceDropdownRef.current &&
-        !sourceDropdownRef.current.contains(event.target)
-      ) {
-        setShowSourceDropdown(false);
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -358,7 +337,6 @@ const Content = () => {
       params.delete("type");
       params.delete("order");
       params.delete("project");
-      params.delete("source");
       params.delete("page");
       if (searchQuery) {
         params.delete("q");
@@ -544,243 +522,54 @@ const Content = () => {
       </div>
 
       <div className="container mx-auto px-4 pb-8 pt-4 md:pt-8">
-        {/* Mobile Filter Dropdowns */}
-        <div className="lg:hidden mb-6 grid grid-cols-2 gap-3">
-          {/* Genre Dropdown */}
-          <div ref={genreDropdownRef} className="relative">
+        {/* Mobile Control Bar & Bottom Sheet Filter Trigger */}
+        <div className="lg:hidden mb-6 flex items-center justify-between gap-3">
+          {/* Layout Toggle Pill */}
+          <div className="flex items-center gap-1 rounded-2xl border border-slate-700/80 bg-slate-900 p-1.5 shadow-md">
             <button
-              onClick={() => setShowGenreDropdown(!showGenreDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
+              type="button"
+              onClick={() => setCardLayout("vertical")}
+              className={`p-2 rounded-xl transition-all ${
+                cardLayout === "vertical"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              aria-label="Tampilan Grid"
+              title="Tampilan Grid"
             >
-              <span className="text-sm font-medium">
-                Genre{" "}
-                {selectedGenres.length > 0 && `(${selectedGenres.length})`}
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCardLayout("horizontal")}
+              className={`p-2 rounded-xl transition-all ${
+                cardLayout === "horizontal"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              aria-label="Tampilan Baris"
+              title="Tampilan Baris"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Filter Action Button */}
+          <button
+            type="button"
+            onClick={() => setShowMobileFilterModal(true)}
+            className="relative flex items-center justify-center p-3 rounded-2xl border border-slate-700/80 bg-slate-900 text-slate-200 hover:text-white shadow-md active:scale-95 transition"
+            aria-label="Buka Filter"
+            title="Filter"
+          >
+            <Filter className="w-5 h-5" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center border-2 border-slate-950">
+                {activeFilterCount}
               </span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showGenreDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showGenreDropdown && (
-              <div className="absolute z-50 mt-2 max-h-96 w-full overflow-y-auto rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="border-b border-slate-200 p-3 dark:border-primary-700">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Pilih Genre
-                    </span>
-                    {selectedGenres.length > 0 && (
-                      <button
-                        onClick={() => {
-                          updateSearchParams((params) => {
-                            params.delete("genreId");
-                            params.delete("genre");
-                            params.delete("page");
-                          });
-                        }}
-                        className="rounded-lg border border-sky-500/50 bg-sky-600 px-2 py-1 text-xs font-semibold text-white shadow-[0_2px_0_0_#facc15] transition-all hover:-translate-y-px hover:brightness-105 dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_2px_0_0_#facc15]"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="p-2">
-                  {genresLoading ? (
-                    <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
-                      Loading...
-                    </div>
-                  ) : (
-                    genres.map((genre) => (
-                      <label
-                        key={genre.id}
-                        className="flex items-center space-x-2 p-2 hover:bg-gray-100 dark:hover:bg-primary-800 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedGenres.includes(genre.id)}
-                          onChange={() => toggleGenre(genre.id)}
-                          className="w-4 h-4 text-blue-500 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {genre.name}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
             )}
-          </div>
-
-          {/* Status Dropdown */}
-          <div ref={statusDropdownRef} className="relative">
-            <button
-              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
-            >
-              <span className="text-sm font-medium">Status</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showStatusDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showStatusDropdown && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="p-2">
-                  {statusOptions.map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setShowStatusDropdown(false);
-                      }}
-                      className={`mb-1 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 last:mb-0 ${selectedStatus === status
-                          ? "border-sky-500/50 bg-sky-600 font-semibold text-white shadow-[0_3px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_3px_0_0_#facc15]"
-                          : "border-transparent text-gray-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-[0_2px_0_0_#e2e8f0] dark:text-gray-300 dark:hover:border-primary-600 dark:hover:bg-primary-800 dark:hover:shadow-[0_2px_0_0_#1e3a5f]"
-                        }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Project filter (is_project) */}
-          <div ref={projectDropdownRef} className="relative">
-            <button
-              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
-            >
-              <span className="text-sm font-medium">Project</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showProjectDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showProjectDropdown && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="p-2">
-                  {projectFilterOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        setProjectFilter(opt.value);
-                        setShowProjectDropdown(false);
-                      }}
-                      className={`mb-1 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 last:mb-0 ${selectedProject === opt.value
-                          ? "border-sky-500/50 bg-sky-600 font-semibold text-white shadow-[0_3px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_3px_0_0_#facc15]"
-                          : "border-transparent text-gray-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-[0_2px_0_0_#e2e8f0] dark:text-gray-300 dark:hover:border-primary-600 dark:hover:bg-primary-800 dark:hover:shadow-[0_2px_0_0_#1e3a5f]"
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Type Dropdown */}
-          <div ref={typeDropdownRef} className="relative">
-            <button
-              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
-            >
-              <span className="text-sm font-medium">Type</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showTypeDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showTypeDropdown && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="p-2">
-                  {typeOptions.map((type) => (
-                    <button
-                      key={type.value}
-                      onClick={() => {
-                        setTypeFilter(type.value);
-                        setShowTypeDropdown(false);
-                      }}
-                      className={`mb-1 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 last:mb-0 ${selectedType === type.value
-                          ? "border-sky-500/50 bg-sky-600 font-semibold text-white shadow-[0_3px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_3px_0_0_#facc15]"
-                          : "border-transparent text-gray-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-[0_2px_0_0_#e2e8f0] dark:text-gray-300 dark:hover:border-primary-600 dark:hover:bg-primary-800 dark:hover:shadow-[0_2px_0_0_#1e3a5f]"
-                        }`}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sort By Dropdown */}
-          <div ref={orderDropdownRef} className="relative">
-            <button
-              onClick={() => setShowOrderDropdown(!showOrderDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
-            >
-              <span className="text-sm font-medium">Sort By</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showOrderDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showOrderDropdown && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="p-2">
-                  {orderOptions.map((order) => (
-                    <button
-                      key={order}
-                      onClick={() => {
-                        setOrderFilter(order);
-                        setShowOrderDropdown(false);
-                      }}
-                      className={`mb-1 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 last:mb-0 ${selectedOrder === order
-                          ? "border-sky-500/50 bg-sky-600 font-semibold text-white shadow-[0_3px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_3px_0_0_#facc15]"
-                          : "border-transparent text-gray-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-[0_2px_0_0_#e2e8f0] dark:text-gray-300 dark:hover:border-primary-600 dark:hover:bg-primary-800 dark:hover:shadow-[0_2px_0_0_#1e3a5f]"
-                        }`}
-                    >
-                      {order}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Source Dropdown */}
-          <div ref={sourceDropdownRef} className="relative">
-            <button
-              onClick={() => setShowSourceDropdown(!showSourceDropdown)}
-              className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-[0_4px_0_0_#e2e8f0] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-cyan-200/20 dark:bg-[#0b355f]/95 dark:text-cyan-50 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.35)] dark:hover:shadow-[0_5px_0_0_rgba(56,189,248,0.45)]"
-            >
-              <span className="text-sm font-medium">Source</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showSourceDropdown ? "rotate-180" : ""}`}
-              />
-            </button>
-            {showSourceDropdown && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-200/90 bg-white shadow-[0_6px_0_0_#cbd5e1] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_6px_0_0_rgba(30,58,138,0.5)]">
-                <div className="p-2">
-                  {sourceOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        setSourceFilter(opt.value);
-                        setShowSourceDropdown(false);
-                      }}
-                      className={`mb-1 w-full rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 last:mb-0 ${selectedSource === opt.value
-                          ? "border-sky-500/50 bg-sky-600 font-semibold text-white shadow-[0_3px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_3px_0_0_#facc15]"
-                          : "border-transparent text-gray-700 hover:border-slate-200 hover:bg-slate-50 hover:shadow-[0_2px_0_0_#e2e8f0] dark:text-gray-300 dark:hover:border-primary-600 dark:hover:bg-primary-800 dark:hover:shadow-[0_2px_0_0_#1e3a5f]"
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+          </button>
+        </div>v>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar - Desktop Only */}
@@ -845,29 +634,7 @@ const Content = () => {
                 </div>
               </div>
 
-              {/* Source Filter */}
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                  Source
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {sourceOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        setSourceFilter(opt.value);
-                      }}
-                      className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${selectedSource === opt.value
-                          ? "border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#facc15] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#facc15]"
-                          : "border-slate-200 bg-slate-50 text-slate-700 shadow-[0_3px_0_0_#e2e8f0] hover:-translate-y-0.5 hover:shadow-[0_4px_0_0_#cbd5e1] active:translate-y-px active:shadow-[0_2px_0_0_#e2e8f0] dark:border-primary-600 dark:bg-primary-800 dark:text-gray-200 dark:shadow-[0_3px_0_0_#1e3a5f] dark:hover:bg-primary-800"
-                        }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Type Filter */}
               <div className="mb-6">
@@ -956,8 +723,7 @@ const Content = () => {
               selectedStatus !== "All" ||
               selectedType !== "All" ||
               selectedOrder !== "Update" ||
-              selectedProject !== "all" ||
-              selectedSource !== "all") && (
+              selectedProject !== "all") && (
                 <div className="mb-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_0_0_#e2e8f0] dark:border-primary-700 dark:bg-primary-900 dark:shadow-[0_4px_0_0_rgba(56,189,248,0.18)]">
                   <div className="flex flex-wrap gap-2">
                     {searchQuery && (
@@ -1028,21 +794,7 @@ const Content = () => {
                         </button>
                       </span>
                     )}
-                    {selectedSource !== "all" && (
-                      <span className="inline-flex items-center space-x-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-full text-sm">
-                        <span>
-                          Source:{" "}
-                          {sourceOptions.find((opt) => opt.value === selectedSource)?.label ||
-                            selectedSource}
-                        </span>
-                        <button
-                          onClick={() => setSourceFilter("all")}
-                          className="hover:text-amber-950 dark:hover:text-amber-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </span>
-                    )}
+
                     {selectedOrder !== "Update" && (
                       <span className="inline-flex items-center space-x-2 px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full text-sm">
                         <span>Order: {selectedOrder}</span>
@@ -1074,8 +826,14 @@ const Content = () => {
               </div>
             ) : (
               <>
-                {/* Manga Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8">
+                {/* Manga Grid / List Container */}
+                <div
+                  className={
+                    cardLayout === "vertical"
+                      ? "grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-8"
+                      : "flex flex-col gap-3 mb-8"
+                  }
+                >
                   {mangaList.map((manga) => (
                     <div
                       key={manga.id}
@@ -1085,7 +843,7 @@ const Content = () => {
                       {/* Cover Image */}
                       <div className="relative aspect-[3/4] overflow-hidden">
                         <LazyImage
-                          src={getImageUrl(manga.cover)}
+                          src={getImageUrl(manga.cover || manga.thumbnail)}
                           alt={manga.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           wrapperClassName="w-full h-full"
@@ -1150,22 +908,22 @@ const Content = () => {
                           </Link>
                         </div>
 
-                        {manga.lastChapters?.length > 0 ? (
+                        {(manga.lastChapters?.length > 0 || manga.last_episodes?.length > 0) ? (
                           <div className="space-y-2 mb-1 mt-auto">
-                            {manga.lastChapters.slice(0, 3).map((chapter, chapterIndex) => (
+                            {(manga.lastChapters || manga.last_episodes).slice(0, 3).map((chapter) => (
                               <ChapterAccessLink
-                                key={chapter.slug}
+                                key={chapter.slug || chapter.id}
                                 chapter={chapter}
                                 to={`/watch/${chapter.slug}`}
                                 onClick={(e) => e.stopPropagation()}
-                                label={`Chapter ${chapter.number || "N/A"}`}
+                                label={`Eps ${chapter.number || chapter.episode_number || "N/A"}`}
                                 meta={getChapterTimeAgo(chapter) || null}
                               />
                             ))}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-500 dark:text-gray-500 mb-1 mt-auto">
-                            Chapter N/A
+                            Detail Anime
                           </div>
                         )}
                       </div>
@@ -1192,6 +950,164 @@ const Content = () => {
           </div>
         </div>
       </div>
+      {/* Mobile Bottom Sheet Filter Modal */}
+      {showMobileFilterModal && (
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end bg-slate-950/80 backdrop-blur-sm lg:hidden animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowMobileFilterModal(false)}
+            aria-hidden
+          />
+          <div className="relative z-10 w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-slate-700/80 bg-slate-900 p-5 shadow-2xl">
+            {/* Top Handle & Title */}
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-white">Filter & Urutkan</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilterModal(false)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Status Filter */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status</h4>
+                <div className="flex flex-wrap gap-2">
+                  {statusOptions.map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                        selectedStatus === st
+                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Type Filter */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipe / Kategori</h4>
+                <div className="flex flex-wrap gap-2">
+                  {typeOptions.map((tp) => (
+                    <button
+                      key={tp.value}
+                      type="button"
+                      onClick={() => setTypeFilter(tp.value)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                        selectedType === tp.value
+                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                      }`}
+                    >
+                      {tp.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Project Filter */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Project</h4>
+                <div className="flex flex-wrap gap-2">
+                  {projectFilterOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setProjectFilter(opt.value)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                        selectedProject === opt.value
+                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Urutan / Sort Order */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Urutkan</h4>
+                <div className="flex flex-wrap gap-2">
+                  {orderOptions.map((ord) => (
+                    <button
+                      key={ord}
+                      type="button"
+                      onClick={() => setOrderFilter(ord)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                        selectedOrder === ord
+                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
+                          : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                      }`}
+                    >
+                      {ord}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Genres Filter */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Genre</h4>
+                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1.5 bg-slate-950/40 rounded-xl border border-slate-800 custom-scrollbar">
+                  {genres.map((g) => {
+                    const isChecked = selectedGenres.includes(g.id);
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => toggleGenre(g.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                          isChecked
+                            ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
+                            : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        {g.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Footer */}
+            <div className="flex items-center gap-3 pt-5 mt-6 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  clearAllFilters();
+                  setShowMobileFilterModal(false);
+                }}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs transition"
+              >
+                Reset Filter
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilterModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30"
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <LiveChatWidget />
     </div>
   );

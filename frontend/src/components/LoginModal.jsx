@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { LogIn, UserPlus, Loader2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import Logo from '../assets/logo.png';
 
 const labelClass =
   'mb-2 block text-xs font-semibold uppercase tracking-wider text-sky-800/90 dark:text-cyan-100/85';
@@ -14,7 +15,8 @@ const inputClass =
 const primaryBtnClass =
   'mt-1 flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-500/25 bg-sky-600 py-3.5 text-[15px] font-semibold text-white shadow-[0_7px_0_0_#0369a1] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_0_0_#0369a1] active:translate-y-0.5 active:shadow-[0_4px_0_0_#0369a1] disabled:pointer-events-none disabled:opacity-55 dark:border-cyan-200/20 dark:bg-[#0a2d52] dark:text-cyan-50 dark:shadow-[0_7px_0_0_#42a5f5] dark:hover:shadow-[0_8px_0_0_#60a5fa] dark:active:shadow-[0_4px_0_0_#3b82f6] dark:hover:brightness-110';
 
-const LoginModal = ({ open, onClose, onSuccess, title, description }) => {
+const LoginModal = ({ open, isOpen, onClose, onSuccess, title, description }) => {
+  const isModalOpen = Boolean(open || isOpen);
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
@@ -24,7 +26,7 @@ const LoginModal = ({ open, onClose, onSuccess, title, description }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!isModalOpen) return undefined;
 
     const scrollY = window.scrollY;
     const { style: htmlStyle } = document.documentElement;
@@ -133,6 +135,8 @@ const LoginModal = ({ open, onClose, onSuccess, title, description }) => {
     }
   };
 
+  if (!isModalOpen) return null;
+
   const modal = (
     <div
       className="fixed inset-0 z-[200] overflow-y-auto overscroll-contain"
@@ -164,7 +168,8 @@ const LoginModal = ({ open, onClose, onSuccess, title, description }) => {
             <X className="h-5 w-5" />
           </button>
 
-          <div className="mb-6 pr-10 text-center">
+          <div className="mb-6 pr-6 text-center">
+            <img src={Logo} alt="Nesiatv" className="h-12 w-auto mx-auto mb-3 drop-shadow-md" />
             <h2
               id="login-modal-title"
               className="text-2xl font-extrabold tracking-tight text-[#163a5f] dark:text-cyan-50 sm:text-3xl"
@@ -173,7 +178,7 @@ const LoginModal = ({ open, onClose, onSuccess, title, description }) => {
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-sky-900/75 dark:text-cyan-100/80">
               {description ||
-                'Chapter terbaru dapat dibaca setelah login. Setelah 2 jam dari rilis, chapter ini bisa dibaca tanpa login.'}
+                'Episode ini memerlukan login untuk ditonton. Silakan login atau daftar akun gratis untuk mengakses konten ini.'}
             </p>
           </div>
 

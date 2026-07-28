@@ -7,12 +7,31 @@ function createShortLivedCache({ ttlMs, maxKeys = 80 }) {
   const dataCache = new Map();
   const inflight = new Map();
 
-  async function wrap(cacheKey, computeFn) {
-    const now = Date.now();
-    const hit = dataCache.get(cacheKey);
-    if (hit && hit.expiresAt > now) {
+  function get(key) {
+    const hit = dataCache.get(key);
+    if (hit && hit.expiresAt > Date.now()) {
       return hit.payload;
     }
+    if (hit) dataCache.delete(key);
+    return null;
+  }
+
+  function set(key, payload) {
+    while (dataCache.size >= maxKeys) {
+      const k = dataCache.keys().next().value;
+      dataCache.delete(k);
+    }
+    dataCache.set(key, { expiresAt: Date.now() + ttlMs, payload });
+  }
+
+  function clear() {
+    dataCache.clear();
+    inflight.clear();
+  }
+
+  async function wrap(cacheKey, computeFn) {
+    const hit = get(cacheKey);
+    if (hit !== null && hit !== undefined) return hit;
 
     if (inflight.has(cacheKey)) {
       return inflight.get(cacheKey);
@@ -21,11 +40,7 @@ function createShortLivedCache({ ttlMs, maxKeys = 80 }) {
     const p = (async () => {
       try {
         const payload = await computeFn();
-        while (dataCache.size > maxKeys) {
-          const k = dataCache.keys().next().value;
-          dataCache.delete(k);
-        }
-        dataCache.set(cacheKey, { expiresAt: Date.now() + ttlMs, payload });
+        set(cacheKey, payload);
         return payload;
       } finally {
         inflight.delete(cacheKey);
@@ -36,11 +51,7 @@ function createShortLivedCache({ ttlMs, maxKeys = 80 }) {
     return p;
   }
 
-  function invalidate() {
-    dataCache.clear();
-  }
-
-  return { wrap, invalidate };
+  return { wrap, get, set, clear, invalidate: clear };
 }
 
 module.exports = { createShortLivedCache };

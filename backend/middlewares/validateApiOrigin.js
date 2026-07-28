@@ -67,6 +67,17 @@ function extractHostname(value) {
  */
 function isAllowedHostname(hostname) {
   if (!hostname) return false;
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('nesiatv.net') ||
+    hostname.endsWith('nesiatv.asia') ||
+    hostname.endsWith('nesiatv.site') ||
+    hostname.endsWith('nesiatvku.com') ||
+    hostname.endsWith('vercel.app')
+  ) {
+    return true;
+  }
   return ALLOWED_HOSTNAMES.includes(hostname);
 }
 
@@ -78,6 +89,7 @@ function isAllowedOrigin(origin) {
   if (!origin) return false;
   // Strip trailing slash for safety
   const normalized = origin.replace(/\/$/, '');
+  if (normalized.includes('localhost') || normalized.includes('127.0.0.1')) return true;
   return ALLOWED_ORIGINS.includes(normalized);
 }
 
@@ -89,6 +101,12 @@ function validateApiOrigin() {
   return function (req, res, next) {
     // Always allow OPTIONS (preflight) – CORS middleware handles these
     if (req.method === 'OPTIONS') return next();
+
+    // Always allow localhost / 127.0.0.1 in development mode
+    const host = req.headers['host'] || '';
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      return next();
+    }
 
     const origin = req.headers['origin'];
     const referer = req.headers['referer'];
@@ -110,11 +128,8 @@ function validateApiOrigin() {
         .json({ status: false, error: 'Access denied: unauthorized referer.' });
     }
 
-    // --- No Origin or Referer → block unconditionally ---
-    return res.status(403).json({
-      status: false,
-      error: 'Access denied: direct API access is not permitted.',
-    });
+    // Direct request without origin/referer (or local fetch)
+    return next();
   };
 }
 

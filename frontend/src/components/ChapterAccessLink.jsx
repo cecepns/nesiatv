@@ -89,10 +89,15 @@ const ChapterAccessLink = ({
             ) : null}
           </>
         ) : (
-          labelNode
+          <span className="inline-flex items-center gap-1.5 min-w-0">
+            <span className="truncate">{labelNode}</span>
+            {locked && showLockIcon ? (
+              <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400 dark:text-amber-300" aria-hidden />
+            ) : null}
+          </span>
         )}
       </Link>
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <LoginModal open={loginOpen} isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 };

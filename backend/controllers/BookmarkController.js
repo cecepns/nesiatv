@@ -19,7 +19,7 @@ const index = async (req, res) => {
     const [rows] = await db.execute(
       `SELECT b.id, b.anime_id, b.created_at, m.slug, m.title, m.thumbnail as cover
        FROM bookmarks b
-       JOIN manga m ON m.id = b.anime_id
+       JOIN anime m ON m.id = b.anime_id
        WHERE b.user_id = ?
        ORDER BY b.created_at DESC
        LIMIT ? OFFSET ?`,
@@ -47,7 +47,7 @@ const store = async (req, res) => {
     const userId = req.user.id;
     let { anime_id, slug } = req.body;
     if (!anime_id && slug) {
-      const [m] = await db.execute('SELECT id FROM manga WHERE slug = ?', [slug]);
+      const [m] = await db.execute('SELECT id FROM anime WHERE slug = ?', [slug]);
       if (m.length > 0) anime_id = m[0].id;
     }
     if (!anime_id) {
@@ -69,7 +69,7 @@ const destroy = async (req, res) => {
     const userId = req.user.id;
     let animeId = req.params.animeId;
     if (Number.isNaN(Number(animeId))) {
-      const [m] = await db.execute('SELECT id FROM manga WHERE slug = ?', [animeId]);
+      const [m] = await db.execute('SELECT id FROM anime WHERE slug = ?', [animeId]);
       if (m.length > 0) animeId = m[0].id;
     }
     await db.execute('DELETE FROM bookmarks WHERE user_id = ? AND anime_id = ?', [userId, animeId]);
@@ -84,7 +84,7 @@ const check = async (req, res) => {
   try {
     let animeId = req.params.animeId;
     if (Number.isNaN(Number(animeId))) {
-      const [m] = await db.execute('SELECT id FROM manga WHERE slug = ?', [animeId]);
+      const [m] = await db.execute('SELECT id FROM anime WHERE slug = ?', [animeId]);
       animeId = m.length > 0 ? m[0].id : null;
     }
     if (!animeId) {

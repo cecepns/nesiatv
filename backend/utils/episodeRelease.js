@@ -18,9 +18,11 @@ async function fetchLastEpisodesByAnimeIds(db, animeIds, limit = 3) {
       e.episode_number AS number,
       e.title,
       e.slug,
+      (COALESCE(e.requires_login, 0) = 1 OR COALESCE(a.requires_login, 0) = 1) AS requires_login,
       UNIX_TIMESTAMP(e.created_at) AS created_at_timestamp,
       UNIX_TIMESTAMP(e.updated_at) AS updated_at_timestamp
     FROM episodes e
+    JOIN anime a ON e.anime_id = a.id
     WHERE e.anime_id IN (${placeholders})
     ORDER BY e.anime_id ASC, CAST(e.episode_number AS UNSIGNED) DESC, e.created_at DESC
   `,
@@ -35,6 +37,7 @@ async function fetchLastEpisodesByAnimeIds(db, animeIds, limit = 3) {
         number: row.number,
         title: row.title,
         slug: row.slug,
+        requires_login: row.requires_login ? 1 : 0,
         created_at: { time: row.created_at_timestamp },
       });
     }

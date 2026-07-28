@@ -1,5 +1,7 @@
 const db = require('../db');
 const { generateSlug } = require('../utils/slug');
+const { uploadFileToS3 } = require('../utils/s3Upload');
+const { deleteFile } = require('../utils/files');
 
 // Helper to record view event
 async function recordAnimeViewEvent(animeId) {
@@ -22,6 +24,9 @@ const showBySlug = async (req, res) => {
         e.title,
         e.slug,
         e.anime_id,
+        e.requires_login as episode_requires_login,
+        a.requires_login as anime_requires_login,
+        (COALESCE(e.requires_login, 0) = 1 OR COALESCE(a.requires_login, 0) = 1) as requires_login,
         a.is_input_manual,
         a.slug as anime_slug,
         a.title as anime_title,
@@ -75,11 +80,13 @@ const showBySlug = async (req, res) => {
           e.title,
           e.slug,
           e.created_at,
+          (COALESCE(e.requires_login, 0) = 1 OR COALESCE(a.requires_login, 0) = 1) as requires_login,
           COALESCE(e.views, 0) AS views,
           (
             SELECT COUNT(*) FROM episode_reactions er WHERE er.episode_id = e.id
           ) AS reaction_count
         FROM episodes e
+        JOIN anime a ON e.anime_id = a.id
         WHERE e.anime_id = ?
         ORDER BY CAST(e.episode_number AS UNSIGNED) DESC, e.episode_number DESC
       `,
@@ -118,7 +125,7 @@ const listByAnime = async (req, res) => {
   try {
     const { animeId } = req.params;
     const [rows] = await db.execute(
-      'SELECT * FROM episodes WHERE anime_id = ? ORDER BY CAST(episode_number AS UNSIGNED) DESC, episode_number DESC',
+      'SELECT e.*, (COALESCE(e.requires_login, 0) = 1 OR COALESCE(a.requires_login, 0) = 1) AS requires_login FROM episodes e JOIN anime a ON e.anime_id = a.id WHERE e.anime_id = ? ORDER BY CAST(e.episode_number AS UNSIGNED) DESC, e.episode_number DESC',
       [animeId]
     );
     res.json(rows);
@@ -130,7 +137,7 @@ const listByAnime = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { anime_id, title, episode_number } = req.body;
+    const { anime_id, title, episode_number, requires_login } = req.body;
     if (!anime_id || !title || !episode_number) {
       return res.status(400).json({ error: 'anime_id, title and episode_number are required' });
     }
@@ -143,9 +150,11 @@ const create = async (req, res) => {
     const animeSlug = animeRows[0].slug;
     const slug = `${animeSlug}-episode-${episode_number}`;
 
+    const reqLoginVal = requires_login === true || requires_login === 1 || requires_login === '1' || requires_login === 'true' ? 1 : 0;
+
     const [result] = await db.execute(
-      'INSERT INTO episodes (anime_id, title, slug, episode_number, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
-      [anime_id, title, slug, episode_number]
+      'INSERT INTO episodes (anime_id, title, slug, episode_number, requires_login, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+      [anime_id, title, slug, episode_number, reqLoginVal]
     );
 
     res.status(201).json({ message: 'Episode created successfully', id: result.insertId, slug });
@@ -158,7 +167,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, episode_number } = req.body;
+    const { title, episode_number, requires_login } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM episodes WHERE id = ?', [id]);
     if (existing.length === 0) {
@@ -175,9 +184,13 @@ const update = async (req, res) => {
       }
     }
 
+    const reqLoginVal = requires_login !== undefined 
+      ? (requires_login === true || requires_login === 1 || requires_login === '1' || requires_login === 'true' ? 1 : 0) 
+      : current.requires_login;
+
     await db.execute(
-      'UPDATE episodes SET title = ?, episode_number = ?, slug = ?, updated_at = NOW() WHERE id = ?',
-      [title || current.title, episode_number || current.episode_number, slug, id]
+      'UPDATE episodes SET title = ?, episode_number = ?, slug = ?, requires_login = ?, updated_at = NOW() WHERE id = ?',
+      [title || current.title, episode_number || current.episode_number, slug, reqLoginVal, id]
     );
 
     res.json({ message: 'Episode updated successfully', slug });
@@ -212,19 +225,44 @@ const listVideos = async (req, res) => {
 
 const storeVideoSource = async (req, res) => {
   try {
-    const { episode_id, quality, server, url } = req.body;
+    const { episode_id, quality, server } = req.body;
+    let url = req.body.url;
+
+    if (req.file) {
+      const key = `videos/ep-${episode_id}/${Date.now()}-${req.file.originalname}`;
+      url = await uploadFileToS3(key, req.file.path, req.file.mimetype);
+      deleteFile(req.file.path);
+    }
+
     if (!episode_id || !url) {
-      return res.status(400).json({ error: 'episode_id and url are required' });
+      return res.status(400).json({ error: 'episode_id and video file/url are required' });
     }
 
     const [result] = await db.execute(
       'INSERT INTO episode_videos (episode_id, quality, server, url, created_at) VALUES (?, ?, ?, ?, NOW())',
-      [episode_id, quality || 'Default', server || 'Primary', url]
+      [episode_id, quality || '720p', server || 'Primary', url]
     );
 
-    res.status(201).json({ message: 'Video source added successfully', id: result.insertId });
+    res.status(201).json({ message: 'Video source added successfully', id: result.insertId, url });
   } catch (error) {
     console.error('Error adding video source:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const batchToggleLogin = async (req, res) => {
+  try {
+    const { anime_id, requires_login } = req.body;
+    if (!anime_id || requires_login === undefined) {
+      return res.status(400).json({ error: 'anime_id and requires_login are required' });
+    }
+
+    const val = requires_login === true || requires_login === 1 || requires_login === '1' || requires_login === 'true' ? 1 : 0;
+    await db.execute('UPDATE episodes SET requires_login = ?, updated_at = NOW() WHERE anime_id = ?', [val, anime_id]);
+
+    res.json({ message: 'Episode login requirements updated successfully' });
+  } catch (error) {
+    console.error('Error batch updating episode login requirement:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -246,7 +284,10 @@ module.exports = {
   create,
   update,
   destroy,
+  batchToggleLogin,
   listVideos,
   storeVideoSource,
   deleteVideoSource,
 };
+
+

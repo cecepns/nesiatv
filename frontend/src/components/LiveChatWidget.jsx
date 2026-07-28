@@ -481,7 +481,7 @@ const LiveChatWidget = () => {
           type="button"
           onClick={() => setChatOpen((prev) => !prev)}
           aria-label={chatOpen ? "Tutup live chat" : "Buka live chat"}
-          className={`relative h-14 w-14 rounded-full bg-gradient-to-br from-red-600 to-rose-700 text-white shadow-[0_12px_35px_rgba(225,29,72,0.45)] transition-all duration-300 hover:scale-110 active:scale-95 ${
+          className={`relative h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-[0_12px_35px_rgba(79,70,229,0.45)] transition-all duration-300 hover:scale-110 active:scale-95 ${
             chatOpen ? "rotate-180" : ""
           }`}
         >

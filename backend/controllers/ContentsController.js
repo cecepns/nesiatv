@@ -31,7 +31,10 @@ const getContents = async (req, res) => {
     const offset = (parseInt(page, 10) - 1) * limit;
 
     let query = `
-      SELECT a.*, c.name as category_name, COUNT(DISTINCT v.id) as votes
+      SELECT 
+        a.id, a.title, a.slug, a.alternative_name, a.japanese_name, 
+        a.thumbnail, a.cover_background, a.rating, a.views, a.status, 
+        a.content_type, a.updated_at, c.name as category_name, COUNT(DISTINCT v.id) as votes
       FROM anime a
       LEFT JOIN categories c ON a.category_id = c.id
       LEFT JOIN votes v ON a.id = v.anime_id
@@ -52,27 +55,33 @@ const getContents = async (req, res) => {
     }
 
     if (type) {
-      whereConditions.push('a.content_type = ?');
-      params.push(type);
+      const typeLower = type.toLowerCase();
+      if (typeLower === 'film' || typeLower === 'movie') {
+        whereConditions.push('(LOWER(a.content_type) = "film" OR LOWER(a.content_type) = "movie")');
+      } else if (typeLower === 'anime') {
+        whereConditions.push('(LOWER(a.content_type) = "anime" OR LOWER(a.content_type) = "tv" OR LOWER(a.content_type) = "manga")');
+      } else {
+        whereConditions.push('LOWER(a.content_type) = ?');
+        params.push(typeLower);
+      }
     }
 
-    // Genre filtering
+    // Genre filtering (supports ID, name, or slug)
     const genreArray = Array.isArray(genre) ? genre : (genre ? [genre] : []);
-    const genreIds = genreArray.map((g) => parseInt(g, 10)).filter((g) => !Number.isNaN(g));
-
-    if (genreIds.length > 0) {
-      query += ' INNER JOIN anime_genres ag ON a.id = ag.anime_id';
-      whereConditions.push(`ag.category_id IN (${genreIds.map(() => '?').join(',')})`);
-      params.push(...genreIds);
+    if (genreArray.length > 0) {
+      query += ' INNER JOIN anime_genres ag ON a.id = ag.anime_id INNER JOIN categories cat ON ag.category_id = cat.id';
+      const genreConditions = genreArray.map(() => '(cat.id = ? OR LOWER(cat.slug) = ? OR LOWER(cat.name) = ?)').join(' OR ');
+      whereConditions.push(`(${genreConditions})`);
+      genreArray.forEach((g) => {
+        const val = String(g).trim().toLowerCase();
+        const numVal = parseInt(val, 10);
+        params.push(Number.isNaN(numVal) ? -1 : numVal, val, val);
+      });
     }
 
     query += ' WHERE ' + whereConditions.join(' AND ');
-    query += ' GROUP BY a.id';
+    query += ' GROUP BY a.id, c.name';
 
-    if (genreIds.length > 0) {
-      query += ' HAVING COUNT(DISTINCT ag.category_id) = ?';
-      params.push(genreIds.length);
-    }
 
     // Order clause
     let orderClause = ' ORDER BY a.updated_at DESC, a.id DESC';
@@ -144,7 +153,7 @@ const getContents = async (req, res) => {
     // Cache list
     contentsListCache.set(cacheKey, formattedData);
 
-    return res.json(formattedData);
+    return res.json({ status: true, data: formattedData });
   } catch (error) {
     console.error('Error in getContents:', error);
     return res.status(500).json({ status: false, error: 'Internal server error' });
@@ -214,6 +223,22 @@ const getContentsCount = async (req, res) => {
   }
 };
 
+const genres = async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT c.*, COUNT(a.id) as anime_count 
+      FROM categories c 
+      LEFT JOIN anime a ON c.id = a.category_id 
+      GROUP BY c.id 
+      ORDER BY c.name
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching content genres:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const invalidateContentsCaches = () => {
   contentsListCache.clear();
   contentsCountCache.clear();
@@ -222,5 +247,7 @@ const invalidateContentsCaches = () => {
 module.exports = {
   getContents,
   getContentsCount,
+  list: getContents,
+  genres,
   invalidateContentsCaches,
 };

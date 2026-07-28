@@ -4,9 +4,9 @@ const { generateSlug } = require('../utils/slug');
 const index = async (req, res) => {
   try {
     const [rows] = await db.execute(`
-      SELECT c.*, COUNT(m.id) as manga_count 
+      SELECT c.*, COUNT(a.id) as manga_count, COUNT(a.id) as anime_count 
       FROM categories c 
-      LEFT JOIN manga m ON c.id = m.category_id 
+      LEFT JOIN anime a ON c.id = a.category_id 
       GROUP BY c.id 
       ORDER BY c.name
     `);

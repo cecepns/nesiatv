@@ -40,7 +40,13 @@ const PopularSection = () => {
       else if (popularRange === "month") payload.popularWindow = "month";
 
       const response = await apiClient.getContents(payload);
-      setFilteredManga(response.data || []);
+      const rawData = Array.isArray(response) ? response : response?.data || [];
+      const items = rawData.map((manga) => ({
+        ...manga,
+        cover: manga.cover || manga.thumbnail,
+        lastChapters: manga.lastChapters || manga.last_episodes || manga.last_chapters || [],
+      }));
+      setFilteredManga(items);
     } catch (error) {
       console.error("Error fetching popular manga:", error);
       setFilteredManga([]);
@@ -260,7 +266,7 @@ const PopularSection = () => {
                             ? "text-xs"
                             : "px-2 py-1.5 text-[11px] sm:px-2.5 sm:py-2 sm:text-xs"
                         }
-                        label={`Chapter ${chapter.number || "N/A"}`}
+                        label={`Eps ${chapter.number || "N/A"}`}
                         meta={getChapterTimeAgo(chapter) || null}
                       />
                     ))}

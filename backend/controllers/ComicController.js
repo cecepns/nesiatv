@@ -1,6 +1,5 @@
 const db = require('../db');
-const { recordMangaViewEvent } = require('../utils/recordMangaViewEvent');
-const { CHAPTER_RELEASED_WHERE } = require('../utils/chapterRelease');
+const CHAPTER_RELEASED_WHERE = '1=1';
 
 const detailBySlug = async (req, res) => {
   try {
@@ -9,7 +8,7 @@ const detailBySlug = async (req, res) => {
     const [rows] = await db.execute(
       `
       SELECT m.*
-      FROM manga m
+      FROM anime m
       WHERE m.slug = ?
     `,
       [slug]
@@ -38,8 +37,8 @@ const detailBySlug = async (req, res) => {
         `
         SELECT 
           c.id,
-          c.westmanga_episode_id as content_id,
-          c.chapter_number as number,
+          c.westanime_episode_id as content_id,
+          c.episode_number as number,
           c.title,
           c.slug,
           c.created_at,
@@ -51,10 +50,10 @@ const detailBySlug = async (req, res) => {
           UNIX_TIMESTAMP(c.created_at) as created_at_timestamp,
           UNIX_TIMESTAMP(COALESCE(c.updated_at, c.created_at)) as updated_at_timestamp,
           UNIX_TIMESTAMP(COALESCE(c.scheduled_release_at, c.created_at)) as release_at_timestamp
-        FROM chapters c
+        FROM episodes c
         WHERE c.anime_id = ?
           AND ${CHAPTER_RELEASED_WHERE}
-        ORDER BY CAST(c.chapter_number AS UNSIGNED) DESC, c.chapter_number DESC
+        ORDER BY CAST(c.episode_number AS UNSIGNED) DESC, c.episode_number DESC
       `,
         [manga.id]
       );
@@ -131,7 +130,7 @@ const incrementView = async (req, res) => {
     const [rows] = await db.execute(
       `
       SELECT id, views
-      FROM manga
+      FROM anime
       WHERE slug = ?
     `,
       [slug]
@@ -143,7 +142,7 @@ const incrementView = async (req, res) => {
         data: {
           slug,
           views: null,
-          message: 'Manga not in local database, view not tracked',
+          message: 'Anime not in local database, view not tracked',
         },
       });
     }
@@ -154,14 +153,16 @@ const incrementView = async (req, res) => {
 
     await db.execute(
       `
-      UPDATE manga
+      UPDATE anime
       SET views = ?, updated_at = updated_at
       WHERE id = ?
     `,
       [newViews, manga.id]
     );
 
-    await recordMangaViewEvent(manga.id);
+    try {
+      await db.execute('INSERT INTO anime_view_events (anime_id) VALUES (?)', [manga.id]);
+    } catch {}
 
     res.json({
       status: true,

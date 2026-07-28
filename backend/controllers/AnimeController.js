@@ -194,6 +194,7 @@ const store = async (req, res) => {
       hot,
       is_project,
       is_safe,
+      requires_login,
       genres,
     } = req.body;
 
@@ -229,9 +230,9 @@ const store = async (req, res) => {
       INSERT INTO anime (
         title, slug, alternative_name, japanese_name, producer, studio,
         synopsis, thumbnail, cover_background, category_id, content_type,
-        rating, status, duration, total_episodes, release_date, release,
-        hot, is_project, is_safe, is_input_manual, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, NOW(), NOW())
+        rating, status, duration, total_episodes, release_date, ` + '`release`,' + `
+        hot, is_project, is_safe, requires_login, is_input_manual, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, NOW(), NOW())
     `,
       [
         title,
@@ -254,6 +255,7 @@ const store = async (req, res) => {
         parseBooleanField(hot) ? 1 : 0,
         parseBooleanField(is_project) ? 1 : 0,
         parseBooleanField(is_safe) ? 1 : 0,
+        parseBooleanField(requires_login) ? 1 : 0,
       ]
     );
 
@@ -297,6 +299,7 @@ const update = async (req, res) => {
       hot,
       is_project,
       is_safe,
+      requires_login,
       genres,
     } = req.body;
 
@@ -339,8 +342,8 @@ const update = async (req, res) => {
       UPDATE anime SET
         title = ?, slug = ?, alternative_name = ?, japanese_name = ?, producer = ?, studio = ?,
         synopsis = ?, thumbnail = ?, cover_background = ?, category_id = ?, content_type = ?,
-        rating = ?, status = ?, duration = ?, total_episodes = ?, release_date = ?, release = ?,
-        hot = ?, is_project = ?, is_safe = ?, updated_at = NOW()
+        rating = ?, status = ?, duration = ?, total_episodes = ?, release_date = ?, ` + '`release` = ?,' + `
+        hot = ?, is_project = ?, is_safe = ?, requires_login = ?, updated_at = NOW()
       WHERE id = ?
     `,
       [
@@ -364,6 +367,7 @@ const update = async (req, res) => {
         hot !== undefined ? (parseBooleanField(hot) ? 1 : 0) : anime.hot,
         is_project !== undefined ? (parseBooleanField(is_project) ? 1 : 0) : anime.is_project,
         is_safe !== undefined ? (parseBooleanField(is_safe) ? 1 : 0) : anime.is_safe,
+        requires_login !== undefined ? (parseBooleanField(requires_login) ? 1 : 0) : anime.requires_login,
         id,
       ]
     );

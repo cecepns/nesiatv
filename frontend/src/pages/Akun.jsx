@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogIn, UserPlus, Loader2, LogOut, Camera } from 'lucide-react';
 import { getImageUrl } from '../utils/api';
 import { toast } from 'react-toastify';
+import Logo from '../assets/logo.png';
 
 const Akun = () => {
   const { user, loading: authLoading, login, register, updateProfile, logout, isAuthenticated } = useAuth();
@@ -478,8 +479,9 @@ const Akun = () => {
           /* Login / Register */
           <div className="rounded-3xl border border-sky-200/80 bg-white/95 p-6 shadow-[0_7px_0_0_#38bdf8] backdrop-blur-sm dark:border-cyan-200/25 dark:bg-[#0b355f]/95 dark:shadow-[0_7px_0_0_#facc15] sm:p-8">
             <div className="mb-6 text-center">
+              <img src={Logo} alt="Nesiatv" className="h-12 w-auto mx-auto mb-3 drop-shadow-md" />
               <h1 className="text-2xl font-extrabold tracking-tight text-[#163a5f] dark:text-cyan-50 sm:text-3xl">
-                Akun
+                Akun Nesiatv
               </h1>
               <p className="mt-2 text-sm leading-relaxed text-sky-900/75 dark:text-cyan-100/80">
                 Masuk dengan akun yang ada atau daftar akun baru.

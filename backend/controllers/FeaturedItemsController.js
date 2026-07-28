@@ -1,5 +1,5 @@
 const db = require('../db');
-const { fetchLastChaptersByMangaIds } = require('../utils/chapterRelease');
+const { fetchLastEpisodesByAnimeIds } = require('../utils/episodeRelease');
 const { createShortLivedCache } = require('../utils/shortLivedCache');
 
 const featuredListCache = createShortLivedCache({ ttlMs: 5 * 60 * 1000, maxKeys: 48 });
@@ -50,13 +50,20 @@ function buildMangaSearchFilter(search) {
 
 async function searchMangaForFeatured(query, limit = 50) {
   const q = normalizeSearchQuery(query);
-  if (!q) return [];
-
   const perPage = Math.min(Math.max(parseInt(String(limit), 10) || 50, 1), 100);
+
+  if (!q) {
+    const [rows] = await db.execute(
+      'SELECT m.*, m.thumbnail as cover FROM anime m ORDER BY m.updated_at DESC LIMIT ?',
+      [perPage]
+    );
+    return rows || [];
+  }
+
   const searchFilter = buildMangaSearchFilter(q);
 
   let sql =
-    'SELECT m.*, m.thumbnail as cover FROM manga m WHERE 1=1' +
+    'SELECT m.*, m.thumbnail as cover FROM anime m WHERE 1=1' +
     searchFilter.sql +
     ' ORDER BY m.updated_at DESC LIMIT ?';
   const params = [...searchFilter.params, perPage];
@@ -87,12 +94,12 @@ async function fetchFeaturedPayload(req) {
         m.rating,
         m.bookmark_count,
         m.views as total_views,
-        m.release,
+        m.` + '`release`,' + `
         m.status,
         m.is_input_manual,
         m.westanime_id
       FROM featured_items fi
-      JOIN manga m ON fi.anime_id = m.id
+      JOIN anime m ON fi.anime_id = m.id
       WHERE 1=1
     `;
 
@@ -147,7 +154,7 @@ async function fetchFeaturedPayload(req) {
 
     let lastChapterByMangaId = {};
     try {
-      lastChapterByMangaId = await fetchLastChaptersByMangaIds(db, animeIds, 3);
+      lastChapterByMangaId = await fetchLastEpisodesByAnimeIds(db, animeIds, 3);
     } catch (err) {
       console.error('Error loading last chapters for featured items:', err);
       lastChapterByMangaId = {};
@@ -198,24 +205,24 @@ const store = async (req, res) => {
       return res.status(400).json({ error: 'anime_id and featured_type are required' });
     }
 
-    let [mangaCheck] = await db.execute('SELECT id FROM manga WHERE id = ?', [anime_id]);
+    let [mangaCheck] = await db.execute('SELECT id FROM anime WHERE id = ?', [anime_id]);
 
     if (mangaCheck.length === 0) {
-      [mangaCheck] = await db.execute('SELECT id FROM manga WHERE westanime_id = ?', [anime_id]);
+      [mangaCheck] = await db.execute('SELECT id FROM anime WHERE westanime_id = ?', [anime_id]);
       if (mangaCheck.length > 0) {
         anime_id = mangaCheck[0].id;
       }
     }
 
     if (mangaCheck.length === 0 && westanime_id) {
-      [mangaCheck] = await db.execute('SELECT id FROM manga WHERE westanime_id = ?', [westanime_id]);
+      [mangaCheck] = await db.execute('SELECT id FROM anime WHERE westanime_id = ?', [westanime_id]);
       if (mangaCheck.length > 0) {
         anime_id = mangaCheck[0].id;
       }
     }
 
     if (mangaCheck.length === 0 && slug) {
-      [mangaCheck] = await db.execute('SELECT id FROM manga WHERE slug = ?', [slug]);
+      [mangaCheck] = await db.execute('SELECT id FROM anime WHERE slug = ?', [slug]);
       if (mangaCheck.length > 0) {
         anime_id = mangaCheck[0].id;
       }

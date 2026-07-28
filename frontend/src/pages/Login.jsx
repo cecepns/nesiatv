@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Loader2, MessageCircle } from 'lucide-react';
 import { apiClient } from '../utils/api';
+import Logo from '../assets/logo.png';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -73,10 +74,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900 rounded-full mb-4">
-              <LogIn className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <img src={Logo} alt="Nesiatv" className="h-14 w-auto mx-auto mb-4 drop-shadow-md" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               Nesiatv Admin
             </h1>
             <p className="text-gray-600 dark:text-gray-400">

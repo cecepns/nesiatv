@@ -80,7 +80,7 @@ function ScheduleCard({ item }) {
           {item.manga.title}
         </p>
         <p className="mt-0.5 line-clamp-1 text-xs text-gray-600 dark:text-gray-400">
-          Ch. {item.chapter_number}
+          Eps {item.chapter_number}
           {item.title ? ` — ${item.title}` : ''}
         </p>
         {releaseTime ? (

@@ -1,19 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Heart, MessageSquare, Play, Star, Tag, Eye } from 'lucide-react';
+import { Heart, MessageSquare, Play, Star, Tag, Eye, Lock, ArrowLeft, Home } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL, apiClient, getImageUrl } from '../utils/api';
 import CommentSection from '../components/CommentSection';
+import LoginModal from '../components/LoginModal';
 
 const AnimeDetail = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+  const isLockedValue = (val) => val === true || val === 1 || val === '1' || val === 'true';
+
+  const handleEpisodeClick = (e, ep) => {
+    const isEpLocked = isLockedValue(ep.requires_login) || isLockedValue(anime?.requires_login);
+    if (isEpLocked && !isAuthenticated) {
+      e.preventDefault();
+      toast.info('Episode ini wajib login. Silakan login terlebih dahulu untuk menonton.');
+      setLoginModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -81,6 +95,30 @@ const AnimeDetail = () => {
         <title>{`${anime.title} Sub Indo - Nesiatv`}</title>
         <meta name="description" content={anime.synopsis || `Nonton anime ${anime.title} sub indo gratis.`} />
       </Helmet>
+
+      {/* Top Sub-Navbar (Back & Home) */}
+      <div className="bg-slate-950/90 border-b border-slate-800/80 backdrop-blur-md py-2.5 px-4 sticky top-16 z-30">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-slate-300 hover:text-white transition text-xs sm:text-sm font-semibold py-1 px-2.5 rounded-lg hover:bg-slate-800/60"
+          >
+            <ArrowLeft className="w-4 h-4 text-indigo-400" />
+            <span>Kembali</span>
+          </button>
+          <span className="text-xs font-bold text-slate-300 truncate max-w-[160px] sm:max-w-xs md:max-w-md">
+            {anime.title}
+          </span>
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-slate-300 hover:text-white transition text-xs sm:text-sm font-semibold py-1 px-2.5 rounded-lg hover:bg-slate-800/60"
+          >
+            <Home className="w-4 h-4 text-indigo-400" />
+            <span>Beranda</span>
+          </Link>
+        </div>
+      </div>
 
       {/* Banner / Cover Background */}
       <div 
@@ -195,19 +233,41 @@ const AnimeDetail = () => {
           <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-800 pb-2">Daftar Episode</h2>
           {anime.episodes && anime.episodes.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {anime.episodes.map((ep) => (
-                <Link
-                  key={ep.id}
-                  to={`/watch/${ep.slug}`}
-                  className="flex items-center justify-between p-3.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white transition border border-slate-700/50"
-                >
-                  <div className="flex flex-col truncate pr-2">
-                    <span className="font-semibold text-sm truncate">{ep.title}</span>
-                    <span className="text-xs text-slate-400">Episode {ep.episode_number}</span>
-                  </div>
-                  <Play className="w-5 h-5 text-indigo-500 fill-current flex-shrink-0" />
-                </Link>
-              ))}
+              {anime.episodes.map((ep) => {
+                const isEpLocked = isLockedValue(ep.requires_login) || isLockedValue(anime.requires_login);
+                return (
+                  <Link
+                    key={ep.id}
+                    to={`/watch/${ep.slug}`}
+                    onClick={(e) => handleEpisodeClick(e, ep)}
+                    className={`flex items-center justify-between p-3.5 rounded-lg text-slate-200 hover:text-white transition border ${
+                      isEpLocked && !isAuthenticated
+                        ? 'bg-slate-800/50 border-amber-500/20 hover:bg-slate-800'
+                        : 'bg-slate-800/80 hover:bg-slate-700 border-slate-700/50'
+                    }`}
+                  >
+                    <div className="flex flex-col truncate pr-2">
+                      <span className="font-semibold text-sm truncate flex items-center gap-1.5">
+                        {isEpLocked && <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                        <span className="truncate">{ep.title}</span>
+                      </span>
+                      <span className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                        <span>Episode {ep.episode_number}</span>
+                        {isEpLocked && (
+                          <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 font-semibold">
+                            Wajib Login
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    {isEpLocked && !isAuthenticated ? (
+                      <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    ) : (
+                      <Play className="w-5 h-5 text-indigo-500 fill-current flex-shrink-0" />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="text-slate-400 text-center py-6 text-sm">
@@ -222,6 +282,12 @@ const AnimeDetail = () => {
         </div>
 
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+      />
     </div>
   );
 };

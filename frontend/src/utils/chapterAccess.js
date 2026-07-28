@@ -46,7 +46,8 @@ export function findChapterInList(chapters, episodeSlug) {
 export function requiresChapterLogin(chapter, isAuthenticated) {
   if (!chapter) return false;
   if (isAuthenticated) return false;
-  return isWithinChapterLockWindow(chapter);
+  const val = chapter.requires_login;
+  return val === true || val === 1 || val === '1' || val === 'true';
 }
 
 export function isChapterAccessLocked(chapters, episodeSlug, isAuthenticated) {

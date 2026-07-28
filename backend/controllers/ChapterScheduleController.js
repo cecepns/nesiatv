@@ -1,9 +1,27 @@
 const db = require('../db');
-const {
-  normalizeScheduledForResponse,
-  getScheduleDayKey,
-  formatDateOnly,
-} = require('../utils/chapterRelease');
+
+function formatDateOnly(dt) {
+  if (!dt) return null;
+  const d = new Date(dt);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().split('T')[0];
+}
+
+function getScheduleDayKey(dt) {
+  if (!dt) return null;
+  const d = new Date(dt);
+  if (isNaN(d.getTime())) return null;
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[d.getDay()];
+}
+
+function normalizeScheduledForResponse(row) {
+  if (!row.scheduled_release_at) return null;
+  return {
+    time: row.scheduled_release_at_timestamp || Math.floor(new Date(row.scheduled_release_at).getTime() / 1000),
+    formatted: new Date(row.scheduled_release_at).toISOString(),
+  };
+}
 
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -80,22 +98,22 @@ const getSchedule = async (req, res) => {
     const [rows] = await db.execute(
       `
       SELECT
-        c.id,
-        c.slug,
-        c.chapter_number,
-        c.title,
-        c.scheduled_release_at,
-        UNIX_TIMESTAMP(c.scheduled_release_at) AS scheduled_release_at_timestamp,
-        m.id AS anime_id,
-        m.title AS manga_title,
-        m.slug AS manga_slug,
-        m.thumbnail AS manga_cover,
-        m.is_project
-      FROM chapters c
-      INNER JOIN manga m ON m.id = c.anime_id
-      WHERE c.scheduled_release_at IS NOT NULL
-        AND DATE(c.scheduled_release_at) BETWEEN ? AND ?
-      ORDER BY c.scheduled_release_at ASC
+        e.id,
+        e.slug,
+        e.episode_number AS chapter_number,
+        e.title,
+        e.scheduled_release_at,
+        UNIX_TIMESTAMP(e.scheduled_release_at) AS scheduled_release_at_timestamp,
+        a.id AS anime_id,
+        a.title AS manga_title,
+        a.slug AS manga_slug,
+        a.thumbnail AS manga_cover,
+        a.is_project
+      FROM episodes e
+      INNER JOIN anime a ON a.id = e.anime_id
+      WHERE e.scheduled_release_at IS NOT NULL
+        AND DATE(e.scheduled_release_at) BETWEEN ? AND ?
+      ORDER BY e.scheduled_release_at ASC
     `,
       [weekStart, weekEnd]
     );

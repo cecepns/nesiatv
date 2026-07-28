@@ -39,7 +39,7 @@ const BottomNavigation = () => {
                 onClick={() => handleNavigation(item)}
                 className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border px-0.5 py-1.5 transition-colors duration-200 ${
                   isActive
-                    ? 'border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#c61737] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#c61737]'
+                    ? 'border-sky-500/50 bg-sky-600 text-white shadow-[0_4px_0_0_#0369a1] dark:border-cyan-400/40 dark:bg-[#0b355f] dark:text-cyan-50 dark:shadow-[0_4px_0_0_#0ea5e9]'
                     : 'border-transparent text-gray-400 hover:text-gray-300'
                 } ${item.comingSoon ? 'cursor-not-allowed opacity-50' : ''}`}
                 disabled={item.comingSoon}

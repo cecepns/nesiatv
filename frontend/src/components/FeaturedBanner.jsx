@@ -173,7 +173,7 @@ function DesktopFeaturedSlide({ item, onReadLatest }) {
                 onClick={() => onReadLatest(latest, item.slug)}
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-8 py-3.5 text-base font-bold text-gray-900 shadow-lg transition-all hover:bg-amber-300 hover:shadow-xl"
               >
-                Mulai Baca
+                Mulai Nonton
                 <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
               </button>
               {item.total_views != null && (
@@ -381,8 +381,8 @@ const FeaturedBanner = ({ items = [], loading = false, onReadLatest }) => {
                 type="button"
                 onClick={() => desktopSwiperRef.current?.slideToLoop(index)}
                 className={`shrink-0 rounded-full transition-all ${index === desktopIndex
-                    ? "h-3 w-8 bg-sky-600 dark:bg-white"
-                    : "h-3 w-3 bg-slate-400/90 hover:bg-slate-500 dark:bg-white/45 dark:hover:bg-white/70"
+                  ? "h-3 w-8 bg-sky-600 dark:bg-white"
+                  : "h-3 w-3 bg-slate-400/90 hover:bg-slate-500 dark:bg-white/45 dark:hover:bg-white/70"
                   }`}
                 aria-label={`Ke slide ${index + 1}`}
                 aria-current={index === desktopIndex ? "true" : undefined}

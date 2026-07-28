@@ -75,6 +75,10 @@ export default function MbuhRedirectScript() {
           script.onload = () => {
             document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true }));
           };
+          script.onerror = () => {
+            console.warn(`[MbuhRedirectScript] Failed to load external script: ${src}`);
+            script.remove();
+          };
           document.body.appendChild(script);
         });
       } catch (error) {

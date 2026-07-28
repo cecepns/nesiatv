@@ -119,7 +119,7 @@ const scrapeAnimeDetail = async (req, res) => {
         `UPDATE anime SET 
           title = ?, alternative_name = ?, japanese_name = ?, producer = ?, studio = ?, 
           synopsis = ?, thumbnail = ?, content_type = ?, rating = ?, status = ?, 
-          duration = ?, total_episodes = ?, release_date = ?, release = ?, updated_at = NOW()
+          duration = ?, total_episodes = ?, release_date = ?, \`release\` = ?, updated_at = NOW()
          WHERE id = ?`,
         [
           title, title, japaneseName, producer, studio, 
@@ -132,7 +132,7 @@ const scrapeAnimeDetail = async (req, res) => {
         `INSERT INTO anime (
           title, slug, alternative_name, japanese_name, producer, studio, 
           synopsis, thumbnail, content_type, rating, status, 
-          duration, total_episodes, release_date, release, created_at, updated_at
+          duration, total_episodes, release_date, \`release\`, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           title, slug, title, japaneseName, producer, studio, 
@@ -233,6 +233,8 @@ const scrapeAnimeDetail = async (req, res) => {
   }
 };
 
+const querystring = require('querystring');
+
 // Scrape Single Episode Stream Links
 const scrapeEpisodeVideoSources = async (req, res) => {
   const { url, episodeId } = req.body; // e.g. https://otakudesu.blog/episode/jsn25-episode-1-2-sub-indo/
@@ -244,43 +246,107 @@ const scrapeEpisodeVideoSources = async (req, res) => {
     const $ = await fetchHtml(url);
     const videoSources = [];
 
-    // 1. Check for iframe embedded player
+    // 1. Check for primary iframe embedded player
     const embedIframe = $('.responsive-embed-stream iframe, .embed-stream iframe, iframe').first();
     if (embedIframe && embedIframe.attr('src')) {
       videoSources.push({
         episode_id: episodeId,
-        quality: 'Default/Embed',
+        quality: 'Default',
         server: 'Primary Embed',
         url: embedIframe.attr('src'),
       });
     }
 
-    // 2. Parse mirrorstream list
-    $('.mirrorstream ul').each((_, ulEl) => {
-      const className = $(ulEl).attr('class') || ''; // e.g. m360p or mirror360p
-      const quality = className.replace('mirror', '').replace('m', '').trim() || 'Default';
+    // 2. Parse mirrorstream list (Stream Links via Otakudesu AJAX)
+    const scripts = $('script').map((i, el) => $(el).html()).get();
+    let nonceAction = '';
+    let mirrorAction = '';
 
-      $(ulEl).find('li a').each((_, aEl) => {
-        const serverName = $(aEl).text().trim();
-        // On Otakudesu, mirrors often use javascript triggers. Let's look for href or data-content
-        let videoUrl = $(aEl).attr('href') || $(aEl).attr('data-content') || '';
-        
-        // If it's a relative/hash or base64 data, we can try to parse or keep it.
-        // Usually Otakudesu has direct download/external links inside download links sections too.
-        if (videoUrl && (videoUrl.startsWith('http') || videoUrl.startsWith('//'))) {
-          videoSources.push({
-            episode_id: episodeId,
-            quality,
-            server: serverName,
-            url: videoUrl,
-          });
+    for (const s of scripts) {
+      if (s && s.includes('admin-ajax.php')) {
+        const nonceMatch = s.match(/data:\s*\{\s*action:\s*["']([a-f0-9]{32})["']\s*\}/);
+        if (nonceMatch) {
+          nonceAction = nonceMatch[1];
         }
-      });
-    });
+        const mirrorMatch = s.match(/nonce:\s*\w+,\s*action:\s*["']([a-f0-9]{32})["']/);
+        if (mirrorMatch) {
+          mirrorAction = mirrorMatch[1];
+        }
+      }
+    }
 
-    // 3. Fallback: Parse download section to get direct video hosting urls (Mega, DesuUpload, Sendcm, GoFile etc)
+    if (nonceAction && mirrorAction) {
+      try {
+        const client = axios.create({
+          headers: {
+            'User-Agent': DEFAULT_HEADERS['User-Agent'],
+            'Accept': '*/*',
+            'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Referer': url,
+            'Origin': 'https://otakudesu.blog',
+          },
+          timeout: 10000,
+        });
+
+        const nonceRes = await client.post('https://otakudesu.blog/wp-admin/admin-ajax.php', querystring.stringify({ action: nonceAction }));
+        const nonce = nonceRes.data?.data;
+
+        if (nonce) {
+          const mirrorLinks = [];
+          $('.mirrorstream ul').each((_, ul) => {
+            const qClass = $(ul).attr('class') || '';
+            const quality = qClass.replace('mirror', '').replace('m', '').trim() || 'Default';
+            $(ul).find('li a').each((_, a) => {
+              const text = $(a).text().trim();
+              const content = $(a).attr('data-content');
+              if (content) {
+                mirrorLinks.push({ quality, server: text, content });
+              }
+            });
+          });
+
+          for (const item of mirrorLinks) {
+            try {
+              const decoded = JSON.parse(Buffer.from(item.content, 'base64').toString('utf-8'));
+              const streamRes = await client.post(
+                'https://otakudesu.blog/wp-admin/admin-ajax.php',
+                querystring.stringify({
+                  ...decoded,
+                  nonce,
+                  action: mirrorAction,
+                })
+              );
+
+              if (streamRes.data && streamRes.data.data) {
+                const decodedHtml = Buffer.from(streamRes.data.data, 'base64').toString('utf-8');
+                const iframeSrc = cheerio.load(decodedHtml)('iframe').attr('src');
+                if (iframeSrc) {
+                  const isDuplicate = videoSources.some((v) => v.url === iframeSrc);
+                  if (!isDuplicate) {
+                    videoSources.push({
+                      episode_id: episodeId,
+                      quality: item.quality,
+                      server: item.server,
+                      url: iframeSrc,
+                    });
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn(`Failed resolving mirror ${item.server} (${item.quality}):`, err.message);
+            }
+          }
+        }
+      } catch (ajaxErr) {
+        console.warn('Mirrorstream nonce fetch failed:', ajaxErr.message);
+      }
+    }
+
+    // 3. Parse download section to get download links
     $('.download ul li').each((_, liEl) => {
-      const qualityText = $(liEl).find('strong').text().replace('MP4', '').replace('MKV', '').trim() || 'Default';
+      const qualityText = $(liEl).find('strong').text().replace('MP4', '').replace('MKV', '').trim() || 'Download';
       $(liEl).find('a').each((_, aEl) => {
         const serverName = $(aEl).text().trim();
         const downloadUrl = $(aEl).attr('href');
@@ -288,7 +354,7 @@ const scrapeEpisodeVideoSources = async (req, res) => {
         if (downloadUrl && downloadUrl.startsWith('http')) {
           videoSources.push({
             episode_id: episodeId,
-            quality: qualityText,
+            quality: `[Download] ${qualityText}`,
             server: serverName,
             url: downloadUrl,
           });
@@ -298,7 +364,6 @@ const scrapeEpisodeVideoSources = async (req, res) => {
 
     // Store sources in DB
     if (videoSources.length > 0) {
-      // Clear existing videos first
       await db.execute('DELETE FROM episode_videos WHERE episode_id = ?', [episodeId]);
 
       for (const src of videoSources) {
@@ -311,7 +376,7 @@ const scrapeEpisodeVideoSources = async (req, res) => {
 
     return res.json({
       status: true,
-      message: `Successfully scraped ${videoSources.length} video source links for episode`,
+      message: `Successfully scraped ${videoSources.length} video stream and download links for episode`,
       data: videoSources,
     });
   } catch (error) {

@@ -1,18 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, Play, List, ChevronLeft, ChevronRight, Share2, Server } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Play, 
+  List, 
+  ChevronLeft, 
+  ChevronRight, 
+  ChevronDown,
+  Share2, 
+  Server, 
+  Download, 
+  ExternalLink,
+  Lock,
+  LogIn,
+  ShieldAlert
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL, getImageUrl } from '../utils/api';
+import LazyImage from '../components/LazyImage';
 import CommentSection from '../components/CommentSection';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 const EpisodePlayer = () => {
   const { episodeSlug } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [selectedDownloadId, setSelectedDownloadId] = useState('');
+
+  const videos = data?.videos || [];
+  const downloadVideos = (videos || []).filter(v => v.quality?.includes('Download') || v.url?.includes('link.desustream.com'));
 
   useEffect(() => {
     const fetchEpisode = async () => {
@@ -23,12 +46,10 @@ const EpisodePlayer = () => {
         
         if (json.status && json.data) {
           setData(json.data);
-          // Set default/first video source as active
-          if (json.data.videos && json.data.videos.length > 0) {
-            setActiveVideo(json.data.videos[0]);
-          } else {
-            setActiveVideo(null);
-          }
+          // Set default/first video source that is NOT a download link as active video
+          const videoList = json.data.videos || [];
+          const firstStream = videoList.find(v => !v.quality?.includes('Download') && !v.url?.includes('link.desustream.com')) || videoList[0];
+          setActiveVideo(firstStream || null);
         } else {
           toast.error(json.error || 'Gagal memuat episode');
         }
@@ -42,23 +63,53 @@ const EpisodePlayer = () => {
     fetchEpisode();
   }, [episodeSlug]);
 
+  useEffect(() => {
+    if (downloadVideos.length > 0 && (!selectedDownloadId || !downloadVideos.some(v => String(v.id) === String(selectedDownloadId)))) {
+      setSelectedDownloadId(downloadVideos[0].id);
+    }
+  }, [downloadVideos, selectedDownloadId]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400">
-        Memuat episode dan streaming link...
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm font-medium">Memuat episode dan streaming link...</span>
+        </div>
       </div>
     );
   }
 
-  if (!data || !data.content) {
+  if (!data) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-rose-500">
+      <div className="flex h-screen items-center justify-center bg-slate-950 text-rose-500 font-medium">
         Episode tidak ditemukan
       </div>
     );
   }
 
-  const { content, episodes, videos, number } = data;
+  // Format content object safely
+  const content = {
+    id: data.anime_id || data.content?.id || data.anime?.id,
+    title: data.anime_title || data.title || data.content?.title || data.anime?.title,
+    slug: data.anime_slug || data.content?.slug || data.anime?.slug || data.slug,
+    cover: data.anime_cover || data.cover || data.thumbnail || data.cover_background || data.content?.cover,
+    synopsis: data.anime_synopsis || data.content?.synopsis,
+    content_type: data.content_type || data.content?.content_type,
+    rating: data.rating || data.content?.rating,
+  };
+
+  const episodes = data.all_episodes || data.episodes || [];
+  const number = data.number || data.episode_number;
+
+  const isLockedVal = (v) => v === true || v === 1 || v === '1' || v === 'true';
+
+  // Check login requirement (from episode or parent anime)
+  const requiresLogin = isLockedVal(data.requires_login) || isLockedVal(data.episode_requires_login) || isLockedVal(data.anime_requires_login);
+  const isLockedForUser = requiresLogin && !isAuthenticated;
+
+  // Separate stream videos
+  const streamVideos = (videos || []).filter(v => !v.quality?.includes('Download') && !v.url?.includes('link.desustream.com'));
 
   // Sorting helper for navigation
   const sortedEpisodes = [...episodes].sort((a, b) => parseFloat(a.number) - parseFloat(b.number));
@@ -75,6 +126,15 @@ const EpisodePlayer = () => {
     }
   };
 
+  const handleEpisodeClick = (e, ep) => {
+    const isEpLocked = isLockedVal(ep.requires_login) || isLockedVal(data.anime_requires_login);
+    if (isEpLocked && !isAuthenticated) {
+      e.preventDefault();
+      toast.info('Episode ini wajib login. Silakan login terlebih dahulu untuk menonton.');
+      setLoginModalOpen(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-12">
       <Helmet>
@@ -85,11 +145,11 @@ const EpisodePlayer = () => {
       <div className="bg-slate-900 border-b border-slate-800 py-3 px-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link 
-            to={`/anime/${content.slug}`} 
+            to={content.slug ? `/anime/${content.slug}` : '/'} 
             className="flex items-center gap-2 text-slate-400 hover:text-white transition text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Kembali ke Detail Anime</span>
+            <span>{content.slug ? 'Kembali ke Detail Anime' : 'Kembali ke Beranda'}</span>
           </Link>
           <div className="text-xs text-slate-500 font-semibold tracking-wider uppercase hidden sm:block">
             {content.title} — Episode {number}
@@ -105,57 +165,119 @@ const EpisodePlayer = () => {
             
             {/* Streaming Container */}
             <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
-              {activeVideo ? (
-                activeVideo.url.includes('iframe') || activeVideo.url.startsWith('http') ? (
-                  <iframe
-                    src={activeVideo.url}
-                    className="w-full h-full"
-                    allowFullScreen
-                    scrolling="no"
-                    frameBorder="0"
-                    allow="autoplay; encrypted-media"
-                  />
-                ) : (
-                  <video 
-                    src={activeVideo.url} 
-                    controls 
-                    className="w-full h-full"
-                    poster={getImageUrl(content.cover)}
-                  />
-                )
+              {isLockedForUser ? (
+                /* Locked State Player Overlay */
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-10 border border-amber-500/20">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-lg shadow-amber-500/10">
+                    <Lock className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">Episode Ini Wajib Login</h2>
+                  <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+                    Episode ini hanya dapat ditonton oleh pengguna yang sudah terdaftar. Silakan login atau daftar akun gratis untuk mengakses video.
+                  </p>
+                  <button
+                    onClick={() => setLoginModalOpen(true)}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold px-7 py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all hover:scale-105"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span>Login untuk Menonton</span>
+                  </button>
+                </div>
+              ) : activeVideo ? (
+                <iframe
+                  key={activeVideo.id}
+                  src={activeVideo.url}
+                  className="absolute inset-0 w-full h-full border-0"
+                  allowFullScreen
+                  scrolling="no"
+                  allow="autoplay; encrypted-media; fullscreen"
+                />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2 p-6 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-2">
                   <Play className="w-12 h-12 text-slate-700 animate-pulse" />
-                  <p className="text-sm font-medium">Link video/mirror belum disiapkan.</p>
-                  <p className="text-xs text-slate-600">Silakan pilih server lain jika tersedia.</p>
+                  <p className="text-sm font-medium">Pilih server untuk mulai menonton</p>
                 </div>
               )}
             </div>
 
-            {/* Server / Quality Selector Box */}
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-xl">
-              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Server className="w-4 h-4 text-indigo-500" />
-                Pilih Server & Kualitas Streaming
-              </h3>
-              {videos && videos.length > 0 ? (
-                <div className="flex flex-wrap gap-2.5">
-                  {videos.map((vid) => (
-                    <button
-                      key={vid.id}
-                      onClick={() => setActiveVideo(vid)}
-                      className={`px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide uppercase transition border ${
-                        activeVideo && activeVideo.id === vid.id
-                          ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30'
-                          : 'bg-slate-800 border-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      {vid.server} ({vid.quality})
-                    </button>
-                  ))}
+            {/* Server / Quality Selector Box & Download Links */}
+            <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex flex-col gap-5 shadow-xl">
+              {/* Stream Servers Dropdown */}
+              <div>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Server className="w-4 h-4 text-indigo-400" />
+                  Pilih Server & Resolusi Streaming
+                </h3>
+                {isLockedForUser ? (
+                  <p className="text-xs text-amber-400/90 flex items-center gap-1.5 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    Server streaming dikunci. Silakan login terlebih dahulu untuk mengakses pilihan server.
+                  </p>
+                ) : streamVideos.length > 0 ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="relative flex-1">
+                      <select
+                        value={activeVideo?.id || ''}
+                        onChange={(e) => {
+                          const selected = streamVideos.find(v => String(v.id) === e.target.value);
+                          if (selected) setActiveVideo(selected);
+                        }}
+                        className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-xs font-semibold py-3 px-4 pr-10 rounded-xl appearance-none cursor-pointer outline-none transition shadow-sm"
+                      >
+                        {streamVideos.map((vid) => (
+                          <option key={vid.id} value={vid.id} className="bg-slate-900 text-slate-200">
+                            {vid.server} — {vid.quality}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">Tidak ada server streaming alternatif.</p>
+                )}
+              </div>
+
+              {/* Download Section Dropdown */}
+              {downloadVideos.length > 0 && (
+                <div className="pt-4 border-t border-slate-800/80">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Download className="w-4 h-4 text-emerald-400" />
+                    Link Download Episode
+                  </h3>
+                  {isLockedForUser ? (
+                    <p className="text-xs text-amber-400/90 flex items-center gap-1.5 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      Link download dikunci. Silakan login untuk membuka link download episode.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      <div className="relative flex-1">
+                        <select
+                          value={selectedDownloadId}
+                          onChange={(e) => setSelectedDownloadId(e.target.value)}
+                          className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-white text-xs font-semibold py-3 px-4 pr-10 rounded-xl appearance-none cursor-pointer outline-none transition shadow-sm"
+                        >
+                          {downloadVideos.map((vid) => (
+                            <option key={vid.id} value={vid.id} className="bg-slate-900 text-slate-200">
+                              {vid.server} ({vid.quality.replace('[Download]', '').trim()})
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <a
+                        href={downloadVideos.find(v => String(v.id) === String(selectedDownloadId))?.url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <span>Download Sekarang</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-xs text-slate-500">Tidak ada server link alternatif.</p>
               )}
             </div>
 
@@ -163,7 +285,14 @@ const EpisodePlayer = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => prevEpisode && navigate(`/watch/${prevEpisode.slug}`)}
+                  onClick={(e) => {
+                    if (prevEpisode) {
+                      handleEpisodeClick(e, prevEpisode);
+                      if (!Boolean(prevEpisode.requires_login || data.anime_requires_login) || isAuthenticated) {
+                        navigate(`/watch/${prevEpisode.slug}`);
+                      }
+                    }
+                  }}
                   disabled={!prevEpisode}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${
                     prevEpisode 
@@ -175,7 +304,14 @@ const EpisodePlayer = () => {
                   Prev
                 </button>
                 <button
-                  onClick={() => nextEpisode && navigate(`/watch/${nextEpisode.slug}`)}
+                  onClick={(e) => {
+                    if (nextEpisode) {
+                      handleEpisodeClick(e, nextEpisode);
+                      if (!Boolean(nextEpisode.requires_login || data.anime_requires_login) || isAuthenticated) {
+                        navigate(`/watch/${nextEpisode.slug}`);
+                      }
+                    }
+                  }}
                   disabled={!nextEpisode}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition ${
                     nextEpisode 
@@ -209,13 +345,14 @@ const EpisodePlayer = () => {
             
             {/* Mini Anime Card */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex gap-4">
-              <img 
+              <LazyImage 
                 src={getImageUrl(content.cover)} 
                 alt={content.title} 
                 className="w-16 h-20 rounded object-cover aspect-[3/4]"
+                wrapperClassName="w-16 h-20 shrink-0"
               />
               <div className="flex flex-col justify-center truncate">
-                <Link to={`/anime/${content.slug}`} className="font-bold text-white text-sm hover:text-indigo-400 transition truncate">
+                <Link to={content.slug ? `/anime/${content.slug}` : '/'} className="font-bold text-white text-sm hover:text-indigo-400 transition truncate">
                   {content.title}
                 </Link>
                 <span className="text-xs text-slate-400 mt-1 capitalize">{content.content_type || 'TV'} Series</span>
@@ -233,20 +370,27 @@ const EpisodePlayer = () => {
                 <span className="text-xs text-slate-500 font-semibold">{episodes.length} Eps</span>
               </div>
               <div className="overflow-y-auto flex-1 divide-y divide-slate-800/60 custom-scrollbar">
-                {sortedEpisodes.map((ep) => (
-                  <Link
-                    key={ep.id}
-                    to={`/watch/${ep.slug}`}
-                    className={`flex items-center justify-between p-3.5 transition text-xs font-medium ${
-                      ep.slug === episodeSlug
-                        ? 'bg-indigo-600/10 text-indigo-400 border-l-2 border-indigo-500'
-                        : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <span className="truncate pr-2">{ep.title}</span>
-                    <span className="text-[10px] text-slate-500 flex-shrink-0">Eps {ep.number}</span>
-                  </Link>
-                ))}
+                {sortedEpisodes.map((ep) => {
+                  const epLocked = Boolean(ep.requires_login || data.anime_requires_login);
+                  return (
+                    <Link
+                      key={ep.id}
+                      to={`/watch/${ep.slug}`}
+                      onClick={(e) => handleEpisodeClick(e, ep)}
+                      className={`flex items-center justify-between p-3.5 transition text-xs font-medium ${
+                        ep.slug === episodeSlug
+                          ? 'bg-indigo-600/10 text-indigo-400 border-l-2 border-indigo-500'
+                          : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="truncate pr-2 flex items-center gap-1.5">
+                        {epLocked && <Lock className="w-3 h-3 text-amber-400 shrink-0" />}
+                        <span className="truncate">{ep.title}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 flex-shrink-0">Eps {ep.number}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -254,6 +398,13 @@ const EpisodePlayer = () => {
 
         </div>
       </div>
+
+      <LoginModal 
+        open={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)}
+        title="Wajib Login"
+        description="Silakan login terlebih dahulu untuk menonton episode ini."
+      />
     </div>
   );
 };

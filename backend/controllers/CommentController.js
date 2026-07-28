@@ -40,7 +40,7 @@ const index = async (req, res) => {
       if (!isNaN(Number(anime_id))) {
         resolvedMangaId = Number(anime_id);
       } else {
-        const [mangaRows] = await db.execute('SELECT id FROM manga WHERE slug = ?', [anime_id]);
+        const [mangaRows] = await db.execute('SELECT id FROM anime WHERE slug = ?', [anime_id]);
 
         if (mangaRows.length === 0) {
           return res.json({ status: true, data: [] });

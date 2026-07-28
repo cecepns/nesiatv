@@ -12,6 +12,8 @@ import {
   BookOpen,
   Upload,
   GripVertical,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -41,6 +43,7 @@ const MangaManager = () => {
     rating: "",
     color: false,
     is_project: false,
+    requires_login: false,
   });
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
@@ -56,6 +59,7 @@ const MangaManager = () => {
     chapter_number: "",
     release_mode: "immediate",
     scheduled_release_at: "",
+    requires_login: false,
   });
   const [chapterCoverFile, setChapterCoverFile] = useState(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
@@ -79,11 +83,15 @@ const MangaManager = () => {
         "",
         "all"
       );
-      setManga(response.manga);
-      setTotalPages(response.totalPages);
-      setTotalCount(response.totalCount);
+      const list = response?.data || response?.manga || [];
+      const totalPagesVal = response?.pagination?.totalPages || response?.totalPages || 1;
+      const totalCountVal = response?.pagination?.total || response?.totalCount || list.length;
+      setManga(Array.isArray(list) ? list : []);
+      setTotalPages(totalPagesVal);
+      setTotalCount(totalCountVal);
     } catch (error) {
       console.error("Error fetching manga:", error);
+      setManga([]);
     } finally {
       setLoading(false);
     }
@@ -215,6 +223,7 @@ const MangaManager = () => {
     }
     submitData.append("color", formData.color ? "true" : "false");
     submitData.append("is_project", formData.is_project ? "true" : "false");
+    submitData.append("requires_login", formData.requires_login ? "true" : "false");
 
     if (thumbnailFile) {
       submitData.append("thumbnail", thumbnailFile);
@@ -245,6 +254,7 @@ const MangaManager = () => {
         rating: "",
         color: false,
         is_project: false,
+        requires_login: false,
       });
       setThumbnailFile(null);
       setCoverFile(null);
@@ -280,6 +290,7 @@ const MangaManager = () => {
       rating: item.rating || "",
       color: item.color || false,
       is_project: !!item.is_project,
+      requires_login: !!item.requires_login,
     });
     setShowForm(true);
   };
@@ -304,7 +315,7 @@ const MangaManager = () => {
     try {
       await apiClient.deleteManga(id);
       // If current page becomes empty after deletion, go to previous page
-      if (manga.length === 1 && currentPage > 1) {
+      if ((manga || []).length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       } else {
         fetchManga();
@@ -363,6 +374,7 @@ const MangaManager = () => {
     submitData.append("title", chapterFormData.title);
     submitData.append("chapter_number", chapterFormData.chapter_number);
     submitData.append("release_mode", chapterFormData.release_mode);
+    submitData.append("requires_login", chapterFormData.requires_login ? "true" : "false");
     if (chapterFormData.release_mode === "scheduled" && chapterFormData.scheduled_release_at) {
       submitData.append("scheduled_release_at", chapterFormData.scheduled_release_at);
     }
@@ -384,6 +396,7 @@ const MangaManager = () => {
         chapter_number: "",
         release_mode: "immediate",
         scheduled_release_at: "",
+        requires_login: false,
       });
       setChapterCoverFile(null);
       await fetchChapters(selectedMangaForChapters.id);
@@ -402,6 +415,7 @@ const MangaManager = () => {
       chapter_number: chapter.chapter_number,
       release_mode: hasSchedule ? "scheduled" : "immediate",
       scheduled_release_at: hasSchedule ? scheduled : defaultScheduleDatetime(),
+      requires_login: !!chapter.requires_login,
     });
     setShowChapterForm(true);
   };
@@ -415,6 +429,32 @@ const MangaManager = () => {
     } catch (error) {
       console.error("Error deleting chapter:", error);
       alert("Gagal menghapus chapter: " + error.message);
+    }
+  };
+
+  const handleToggleEpisodeLogin = async (chapter) => {
+    try {
+      const newReq = !chapter.requires_login;
+      await apiClient.updateChapter(chapter.id, { requires_login: newReq });
+      await fetchChapters(selectedMangaForChapters.id);
+    } catch (error) {
+      console.error("Error toggling chapter login requirement:", error);
+      alert("Gagal mengubah status wajib login: " + error.message);
+    }
+  };
+
+  const handleBatchToggleLogin = async (requiresLogin) => {
+    if (!selectedMangaForChapters) return;
+    const actionText = requiresLogin ? "MEWAJIBKAN LOGIN pada SEMUA episode" : "BEBASKAN LOGIN (bisa nonton tanpa login) pada SEMUA episode";
+    if (!confirm(`Apakah Anda yakin ingin ${actionText} untuk "${selectedMangaForChapters.title}"?`)) return;
+
+    try {
+      await apiClient.batchToggleEpisodeLogin(selectedMangaForChapters.id, requiresLogin);
+      await fetchChapters(selectedMangaForChapters.id);
+      alert("Berhasil memperbarui status wajib login semua episode!");
+    } catch (error) {
+      console.error("Error batch updating login requirement:", error);
+      alert("Gagal memperbarui status wajib login: " + error.message);
     }
   };
 
@@ -740,6 +780,9 @@ const MangaManager = () => {
                       }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
+                      <option value="anime">Anime</option>
+                      <option value="film">Film / Movie</option>
+                      <option value="donghua">Donghua</option>
                       <option value="manga">Manga</option>
                       <option value="manhwa">Manhwa</option>
                       <option value="manhua">Manhua</option>
@@ -833,6 +876,29 @@ const MangaManager = () => {
                   </label>
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Centang untuk menampilkan manga di section Project di home
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.requires_login}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          requires_login: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-gray-300 dark:border-gray-600"
+                    />
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Lock className="w-4 h-4" />
+                      Wajib Login (Full Anime / Film)
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Jika dicentang, seluruh episode anime/film ini hanya dapat ditonton setelah user login
                   </p>
                 </div>
 
@@ -992,16 +1058,29 @@ const MangaManager = () => {
                 </button>
               </div>
 
-              {!selectedMangaForChapters.is_input_manual ? (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <p className="text-yellow-800 dark:text-yellow-200">
-                    Manga ini berasal dari API. Chapter dikelola oleh sistem
-                    eksternal.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-end mb-4">
+              <>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleBatchToggleLogin(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                        title="Kunci semua episode agar wajib login untuk menonton"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        Kunci Semua (Wajib Login)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleBatchToggleLogin(false)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                        title="Buka semua episode agar publik dapat menonton tanpa login"
+                      >
+                        <Unlock className="w-3.5 h-3.5" />
+                        Buka Semua (Bebas)
+                      </button>
+                    </div>
+
                     <button
                       onClick={() => {
                         setEditingChapter(null);
@@ -1010,14 +1089,15 @@ const MangaManager = () => {
                           chapter_number: "",
                           release_mode: "immediate",
                           scheduled_release_at: defaultScheduleDatetime(),
+                          requires_login: false,
                         });
                         setChapterCoverFile(null);
                         setShowChapterForm(true);
                       }}
-                      className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                      className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-xs font-semibold"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Tambah Chapter
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Tambah Episode
                     </button>
                   </div>
 
@@ -1025,7 +1105,7 @@ const MangaManager = () => {
                   <div className="space-y-2 mb-4">
                     {chapters.length === 0 ? (
                       <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                        Belum ada chapter
+                        Belum ada episode / chapter
                       </p>
                     ) : (
                       chapters.map((chapter) => (
@@ -1035,11 +1115,22 @@ const MangaManager = () => {
                         >
                           <div className="flex items-center justify-between p-4">
                             <div className="flex-1">
-                              <h5 className="font-medium text-gray-900 dark:text-gray-100">
-                                {chapter.title}
-                              </h5>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Chapter {chapter.chapter_number} •{" "}
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-medium text-gray-900 dark:text-gray-100">
+                                  {chapter.title}
+                                </h5>
+                                {chapter.requires_login ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                    <Lock className="w-3 h-3" /> Wajib Login
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                    <Unlock className="w-3 h-3" /> Bebas
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                                Episode {chapter.chapter_number || chapter.number} •{" "}
                                 {chapter.image_count || 0} halaman
                                 {isFutureScheduled(chapter) ? (
                                   <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
@@ -1050,9 +1141,20 @@ const MangaManager = () => {
                             </div>
                             <div className="flex space-x-2">
                               <button
+                                onClick={() => handleToggleEpisodeLogin(chapter)}
+                                className={`p-2 rounded transition-colors ${
+                                  chapter.requires_login
+                                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                                title={chapter.requires_login ? "Status: Wajib Login (Klik untuk buka akses)" : "Status: Bebas Nonton (Klik untuk kunci wajib login)"}
+                              >
+                                {chapter.requires_login ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                              </button>
+                              <button
                                 onClick={() => handleToggleChapterImages(chapter.id)}
                                 className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
-                                title="Lihat Gambar"
+                                title="Lihat Gambar/Video"
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
@@ -1179,7 +1281,6 @@ const MangaManager = () => {
                     )}
                   </div>
                 </>
-              )}
             </div>
           </div>
         </div>
@@ -1285,6 +1386,29 @@ const MangaManager = () => {
                       </span>
                     </label>
                   </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={chapterFormData.requires_login}
+                      onChange={(e) =>
+                        setChapterFormData((prev) => ({
+                          ...prev,
+                          requires_login: e.target.checked,
+                        }))
+                      }
+                      className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 border-gray-300 dark:border-gray-600"
+                    />
+                    <span className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <Lock className="w-4 h-4" />
+                      Episode Wajib Login
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Pengunjung harus login terlebih dahulu untuk menonton episode ini
+                  </p>
                 </div>
 
                 {chapterFormData.release_mode === "scheduled" ? (
@@ -1411,24 +1535,24 @@ const MangaManager = () => {
       )}
 
       {/* Manga Grid */}
-      {loading && manga.length === 0 ? (
+      {loading && (manga || []).length === 0 ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
         </div>
-      ) : manga.length === 0 ? (
+      ) : (manga || []).length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-gray-400">
-            Tidak ada manga ditemukan
+            Tidak ada data anime/manga ditemukan
           </p>
         </div>
       ) : (
         <>
           <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
             Menampilkan {(currentPage - 1) * 10 + 1} -{" "}
-            {Math.min(currentPage * 10, totalCount)} dari {totalCount} manga
+            {Math.min(currentPage * 10, totalCount)} dari {totalCount} item
           </div>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {manga.map((item) => (
+            {(manga || []).map((item) => (
               <div
                 key={item.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
@@ -1445,24 +1569,20 @@ const MangaManager = () => {
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-opacity duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
                     <div className="flex space-x-2">
-                      {!!item.is_input_manual && (
-                        <button
-                          onClick={() => handleOpenChapters(item)}
-                          className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-                          title="Kelola Chapter"
-                        >
-                          <BookOpen className="h-4 w-4 text-blue-600" />
-                        </button>
-                      )}
-                      {!!item.is_input_manual && (
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-                          title="Edit"
-                        >
-                          <PencilIcon className="h-4 w-4 text-gray-700" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleOpenChapters(item)}
+                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+                        title="Kelola Episode / Chapter"
+                      >
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+                        title="Edit Anime"
+                      >
+                        <PencilIcon className="h-4 w-4 text-gray-700" />
+                      </button>
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
@@ -1512,15 +1632,13 @@ const MangaManager = () => {
                       {item.view || 0}
                     </div> */}
                   </div>
-                  {!!item.is_input_manual && (
                     <button
                       onClick={() => handleOpenChapters(item)}
                       className="mt-2 w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center justify-center"
                     >
                       <BookOpen className="h-3 w-3 mr-1" />
-                      Kelola Chapter
+                      Kelola Episode
                     </button>
-                  )}
                 </div>
               </div>
             ))}

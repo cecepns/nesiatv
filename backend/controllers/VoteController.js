@@ -24,7 +24,7 @@ const getBySlug = async (req, res) => {
     const { slug } = req.params;
     const actorKey = getAnonymousActorKey(req);
 
-    const [mangaRows] = await db.execute('SELECT id FROM manga WHERE slug = ?', [slug]);
+    const [mangaRows] = await db.execute('SELECT id FROM anime WHERE slug = ?', [slug]);
 
     if (mangaRows.length === 0) {
       return res.status(404).json({ status: false, error: 'Manga not found' });
@@ -96,7 +96,7 @@ const submit = async (req, res) => {
     const actorKey = getAnonymousActorKey(req);
     const userId = req.user ? req.user.id : null;
 
-    const [mangaRows] = await db.execute('SELECT id FROM manga WHERE slug = ?', [slug]);
+    const [mangaRows] = await db.execute('SELECT id FROM anime WHERE slug = ?', [slug]);
 
     if (mangaRows.length === 0) {
       return res.status(404).json({ status: false, error: 'Manga not found' });
