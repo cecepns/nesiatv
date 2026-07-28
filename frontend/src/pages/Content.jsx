@@ -478,13 +478,15 @@ const Content = () => {
       </Helmet>
 
       {/* Ads Section - Top — Layout sudah menyediakan Header + pt-16 di main */}
-      <div className="container mx-auto px-4 pt-5 pb-2 md:pt-8">
-        <AdBanner
-          ads={comicTopAds}
-          layout="grid"
-          columns={2}
-        />
-      </div>
+      {comicTopAds && comicTopAds.length > 0 && (
+        <div className="container mx-auto px-4 pt-5 pb-2 md:pt-8">
+          <AdBanner
+            ads={comicTopAds}
+            layout="grid"
+            columns={2}
+          />
+        </div>
+      )}
 
       {/* Page Header */}
       <div className="bg-white dark:bg-transparent border-b border-gray-200 dark:border-white/10 shadow-md dark:shadow-none top-20 z-40">
@@ -955,7 +957,7 @@ const Content = () => {
             {/* Top Handle & Title */}
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-5 h-5 text-sky-400" />
+                <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
                 <h3 className="text-base font-bold text-white">Filter & Urutkan</h3>
               </div>
               <button
@@ -979,7 +981,7 @@ const Content = () => {
                       onClick={() => setStatusFilter(st)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedStatus === st
-                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1000,7 +1002,7 @@ const Content = () => {
                       onClick={() => setTypeFilter(tp.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedType === tp.value
-                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1021,7 +1023,7 @@ const Content = () => {
                       onClick={() => setProjectFilter(opt.value)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedProject === opt.value
-                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1042,7 +1044,7 @@ const Content = () => {
                       onClick={() => setOrderFilter(ord)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition border ${
                         selectedOrder === ord
-                          ? "bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/20"
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-700 border-indigo-500 text-white shadow-md shadow-indigo-600/30"
                           : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
                       }`}
                     >
@@ -1070,7 +1072,7 @@ const Content = () => {
                           onClick={() => toggleGenre(g.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
                             isChecked
-                              ? "bg-sky-600/40 border-sky-500 text-sky-200"
+                              ? "bg-indigo-600/40 border-indigo-500 text-indigo-200"
                               : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
                           }`}
                         >
@@ -1098,7 +1100,7 @@ const Content = () => {
               <button
                 type="button"
                 onClick={() => setShowMobileFilterModal(false)}
-                className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition shadow-lg shadow-sky-600/30"
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30"
               >
                 Terapkan
               </button>

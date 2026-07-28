@@ -435,7 +435,7 @@ const LiveChatWidget = () => {
               rows={3}
               maxLength={300}
               placeholder="Tulis pesan…"
-              className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-y min-h-[4.5rem]"
+              className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y min-h-[4.5rem]"
             />
             <div className="flex items-center justify-between gap-2 pt-1">
               <button
@@ -451,7 +451,7 @@ const LiveChatWidget = () => {
               <button
                 type="submit"
                 disabled={chatSending || !chatInput.trim()}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-700 px-4 py-2.5 text-sm font-semibold hover:from-indigo-500 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-indigo-600/30 text-white"
               >
                 <Send className="h-4 w-4" />
                 {chatSending ? "Mengirim..." : "Kirim"}
@@ -463,7 +463,7 @@ const LiveChatWidget = () => {
             <span>Login dulu untuk kirim chat.</span>
             <Link
               to="/akun"
-              className="inline-flex items-center justify-center rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-600 to-blue-700 px-4 py-2 text-sm font-semibold text-white hover:from-indigo-500 hover:to-blue-600 transition-colors shadow-md shadow-indigo-600/30"
             >
               Masuk
             </Link>
