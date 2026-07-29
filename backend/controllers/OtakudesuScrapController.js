@@ -388,8 +388,50 @@ const scrapeEpisodeVideoSources = async (req, res) => {
   }
 };
 
+// Proxy desustream page to extract direct video URL
+const desustreamProxy = async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).json({ status: false, message: 'URL parameter is required' });
+  }
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        ...DEFAULT_HEADERS,
+        'Referer': 'https://otakudesu.blog',
+      },
+      timeout: 10000,
+    });
+
+    const $ = cheerio.load(response.data);
+    const videoSource = $('video source').attr('src') || $('source').attr('src');
+
+    if (videoSource) {
+      return res.json({
+        status: true,
+        directUrl: videoSource,
+        type: $('video source').attr('type') || 'video/mp4'
+      });
+    }
+
+    return res.status(404).json({
+      status: false,
+      message: 'Video source not found on desustream page',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to fetch desustream media',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAnimeList,
   scrapeAnimeDetail,
   scrapeEpisodeVideoSources,
+  desustreamProxy,
 };
+

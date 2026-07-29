@@ -10,6 +10,8 @@ import LoginModal from '../components/LoginModal';
 import ShareModal from '../components/ShareModal';
 import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
 import discordIcon from '../assets/discord.svg';
+import AdBanner from '../components/AdBanner';
+import { useAds } from '../hooks/useAds';
 
 const AnimeDetail = () => {
   const { slug } = useParams();
@@ -24,6 +26,11 @@ const AnimeDetail = () => {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
   const [userReaction, setUserReaction] = useState(null);
+
+  // Fetch Ads for Sinopsis Page
+  const { ads: sinopsisHeaderAds } = useAds('chapter-top');
+  const { ads: sinopsisMiddleAds } = useAds('list-chapter');
+  const { ads: sinopsisFooterAds } = useAds('top-upvote');
 
   const isLockedValue = (val) => val === true || val === 1 || val === '1' || val === 'true';
 
@@ -266,6 +273,13 @@ const AnimeDetail = () => {
 
       {/* Main Container */}
       <div className="max-w-2xl mx-auto px-4 pt-6 relative z-10">
+        {/* Sinopsis Header Ad (Paling Atas) */}
+        {sinopsisHeaderAds && sinopsisHeaderAds.length > 0 && (
+          <div className="mb-6">
+            <AdBanner ads={sinopsisHeaderAds} layout="grid" columns={1} />
+          </div>
+        )}
+
         {/* Poster Image */}
         <div className="w-full max-w-sm mx-auto mb-6">
           <img 
@@ -471,6 +485,13 @@ const AnimeDetail = () => {
 
         {/* Episodes List */}
         <div className="mt-8 space-y-3">
+          {/* Sinopsis Middle Ad (Diatas Episode) */}
+          {sinopsisMiddleAds && sinopsisMiddleAds.length > 0 && (
+            <div className="mb-4">
+              <AdBanner ads={sinopsisMiddleAds} layout="grid" columns={1} />
+            </div>
+          )}
+
           <h2 className="text-lg font-bold text-white mb-4 px-1">Daftar Episode</h2>
           {anime.episodes && anime.episodes.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -517,11 +538,11 @@ const AnimeDetail = () => {
                         <div className="flex flex-col gap-1 text-xs text-slate-400 mt-2">
                           <span className="flex items-center gap-1.5">
                             <Eye className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{ep.views || Math.floor(Math.random() * 300) + 40} lihat</span>
+                            <span>{ep.views || 0} lihat</span>
                           </span>
                           <span className="flex items-center gap-1.5 text-amber-400/90 font-medium">
                             <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span>{ep.reactions || Math.floor(Math.random() * 40) + 5} reaksi</span>
+                            <span>{ep.reactions || 0} reaksi</span>
                           </span>
                         </div>
                       </div>
@@ -551,6 +572,13 @@ const AnimeDetail = () => {
           ) : (
             <div className="text-slate-400 text-center py-8 text-sm bg-[#111420] rounded-2xl border border-slate-800">
               Belum ada episode yang tersedia.
+            </div>
+          )}
+
+          {/* Sinopsis Footer Ad (Dibawah Episode) */}
+          {sinopsisFooterAds && sinopsisFooterAds.length > 0 && (
+            <div className="pt-4">
+              <AdBanner ads={sinopsisFooterAds} layout="grid" columns={1} />
             </div>
           )}
         </div>

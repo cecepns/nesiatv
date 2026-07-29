@@ -63,7 +63,20 @@ const Content = () => {
     projectParam === "true" || projectParam === "false" ? projectParam : "all";
 
   const [showMobileFilterModal, setShowMobileFilterModal] = useState(false);
-  const [cardLayout, setCardLayout] = useState("vertical");
+  const cardLayout = searchParams.get("layout") === "horizontal" ? "horizontal" : "vertical";
+
+  const setCardLayout = useCallback(
+    (layout) => {
+      const nextParams = new URLSearchParams(searchParams);
+      if (layout === "vertical") {
+        nextParams.delete("layout");
+      } else {
+        nextParams.set("layout", layout);
+      }
+      setSearchParams(nextParams);
+    },
+    [searchParams, setSearchParams]
+  );
 
   const selectedGenres = useMemo(() => {
     const genreIdParams = searchParams

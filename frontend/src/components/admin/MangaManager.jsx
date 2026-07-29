@@ -66,7 +66,12 @@ const MangaManager = () => {
   const [selectedChapterForImages, setSelectedChapterForImages] =
     useState(null);
   const [chapterImages, setChapterImages] = useState([]);
-  const [chapterImagesMap, setChapterImagesMap] = useState({}); // Store images for each chapter
+  const [videoSourceType, setVideoSourceType] = useState("url"); // "url" or "file"
+  const [streamServerName, setStreamServerName] = useState("Primary");
+  const [streamQuality, setStreamQuality] = useState("720p");
+  const [streamUrl, setStreamUrl] = useState("");
+  const [previewVideoUrl, setPreviewVideoUrl] = useState(null);
+  const [chapterImagesMap, setChapterImagesMap] = useState({}); // Store images/videos for each chapter
   const [expandedChapters, setExpandedChapters] = useState({}); // Track which chapters have images expanded
   const [loadingImages, setLoadingImages] = useState({}); // Track loading state for each chapter
   const [draggedImage, setDraggedImage] = useState(null); // Track dragged image {episodeId, imageId}
@@ -460,27 +465,46 @@ const MangaManager = () => {
 
   const handleUploadChapterImages = async (e) => {
     e.preventDefault();
-    if (!selectedChapterForImages || chapterImages.length === 0) return;
-
-    const formData = new FormData();
-    chapterImages.forEach((file) => {
-      formData.append("images", file);
-    });
+    if (!selectedChapterForImages) return;
 
     try {
-      await apiClient.addEpisodeVideo(selectedChapterForImages.id, formData);
+      if (videoSourceType === "url") {
+        if (!streamUrl.trim()) {
+          alert("URL Stream wajib diisi!");
+          return;
+        }
+        await apiClient.addEpisodeVideo({
+          episode_id: selectedChapterForImages.id,
+          server: streamServerName || "Primary",
+          quality: streamQuality || "720p",
+          url: streamUrl.trim(),
+        });
+      } else {
+        if (chapterImages.length === 0) {
+          alert("Pilih file video atau gambar terlebih dahulu!");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("episode_id", selectedChapterForImages.id);
+        formData.append("server", streamServerName || "Primary");
+        formData.append("quality", streamQuality || "720p");
+        formData.append("video_file", chapterImages[0]);
+
+        await apiClient.addEpisodeVideo(formData);
+      }
+
       setShowImageUpload(false);
       setSelectedChapterForImages(null);
       setChapterImages([]);
+      setStreamUrl("");
       await fetchChapters(selectedMangaForChapters.id);
-      // Refresh images for this chapter
       if (expandedChapters[selectedChapterForImages.id]) {
         await fetchChapterImages(selectedChapterForImages.id);
       }
-      alert("Gambar berhasil diupload!");
+      alert("Sumber video/stream berhasil ditambahkan!");
     } catch (error) {
-      console.error("Error uploading images:", error);
-      alert("Gagal mengupload gambar: " + error.message);
+      console.error("Error adding stream source:", error);
+      alert("Gagal menambahkan sumber stream: " + error.message);
     }
   };
 
@@ -1185,7 +1209,7 @@ const MangaManager = () => {
                           </div>
                         </div>
 
-                        {/* Expanded Images Section */}
+                        {/* Expanded Streams Section */}
                         {expandedChapters[chapter.id] && (
                           <div className="border-t border-gray-200 dark:border-gray-600 p-4">
                             {loadingImages[chapter.id] ? (
@@ -1196,77 +1220,66 @@ const MangaManager = () => {
                               <>
                                 {chapterImagesMap[chapter.id] &&
                                   chapterImagesMap[chapter.id].length > 0 ? (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Drag and drop gambar untuk mengubah urutan
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        Daftar Sumber Video / Stream Server ({chapterImagesMap[chapter.id].length}):
                                       </p>
-                                      {isReordering[chapter.id] && (
-                                        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-                                          <RefreshCw className="h-4 w-4 animate-spin" />
-                                          <span>Menyimpan urutan...</span>
-                                        </div>
-                                      )}
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                      {chapterImagesMap[chapter.id].map((image) => {
-                                        const isDragged = draggedImage?.episodeId === chapter.id && draggedImage?.imageId === image.id;
-                                        const isDraggedOver = draggedOverImage?.episodeId === chapter.id && draggedOverImage?.imageId === image.id;
-
-                                        return (
-                                          <div
-                                            key={image.id}
-                                            draggable
-                                            onDragStart={(e) => handleDragStart(e, chapter.id, image.id)}
-                                            onDragOver={(e) => handleDragOver(e, chapter.id, image.id)}
-                                            onDragLeave={handleDragLeave}
-                                            onDrop={(e) => handleDrop(e, chapter.id, image.id)}
-                                            onDragEnd={handleDragEnd}
-                                            className={`relative group aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-move transition-all ${isDragged ? 'opacity-50 scale-95' : ''
-                                              } ${isDraggedOver ? 'ring-2 ring-blue-500 scale-105 z-10' : ''
-                                              } ${isReordering[chapter.id] ? 'pointer-events-none' : ''
-                                              }`}
-                                          >
-                                            <LazyImage
-                                              src={getImageUrl(image.image_path)}
-                                              alt={`Page ${image.page_number}`}
-                                              className="w-full h-full object-cover pointer-events-none"
-                                              wrapperClassName="w-full h-full"
-                                            />
-                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center gap-2">
-                                              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 transition-all">
-                                                <div className="p-2 bg-gray-800/80 text-white rounded-full">
-                                                  <GripVertical className="h-4 w-4" />
-                                                </div>
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteChapterImage(chapter.id, image.id);
-                                                  }}
-                                                  className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all"
-                                                  title="Hapus Gambar"
-                                                >
-                                                  <Trash2 className="h-4 w-4" />
-                                                </button>
-                                              </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {chapterImagesMap[chapter.id].map((video) => (
+                                        <div
+                                          key={video.id}
+                                          className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700/80 rounded-lg border border-gray-200 dark:border-gray-600"
+                                        >
+                                          <div className="flex flex-col min-w-0 pr-2">
+                                            <div className="flex items-center gap-2">
+                                              <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold">
+                                                {video.server || "Server"}
+                                              </span>
+                                              <span className="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-0.5 rounded text-xs font-medium">
+                                                {video.quality || "720p"}
+                                              </span>
                                             </div>
-                                            <div className="absolute top-0 left-0 bg-blue-600 text-white px-2 py-1 rounded-br-lg text-xs font-medium">
-                                              #{image.page_number}
-                                            </div>
-                                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                              <p className="text-white text-xs font-medium">
-                                                Halaman {image.page_number}
-                                              </p>
-                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1.5" title={video.url || video.image_path}>
+                                              {video.url || video.image_path}
+                                            </p>
                                           </div>
-                                        );
-                                      })}
+                                          <div className="flex items-center gap-2 flex-shrink-0">
+                                            <button
+                                              onClick={() => setPreviewVideoUrl(video.url || getImageUrl(video.image_path))}
+                                              className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center gap-1 transition"
+                                              title="Preview Stream"
+                                            >
+                                              <Eye className="w-3.5 h-3.5" />
+                                              <span>Preview</span>
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteChapterImage(chapter.id, video.id)}
+                                              className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition"
+                                              title="Hapus Link"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 ) : (
-                                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                                    Belum ada gambar untuk chapter ini
-                                  </p>
+                                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                                    <p className="text-sm">Belum ada sumber stream untuk episode ini.</p>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedChapterForImages(chapter);
+                                        setShowImageUpload(true);
+                                      }}
+                                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Tambah Sumber Stream</span>
+                                    </button>
+                                  </div>
                                 )}
                               </>
                             )}
@@ -1277,6 +1290,157 @@ const MangaManager = () => {
                   )}
                 </div>
               </>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Preview Modal */}
+      {previewVideoUrl && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl max-w-3xl w-full overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <h4 className="text-sm font-semibold text-white">Preview Stream Player</h4>
+              <button
+                onClick={() => setPreviewVideoUrl(null)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative aspect-video w-full bg-black">
+              {previewVideoUrl.includes('.mp4') || previewVideoUrl.includes('googlevideo.com') ? (
+                <video src={previewVideoUrl} controls autoPlay className="w-full h-full" />
+              ) : (
+                <iframe
+                  src={previewVideoUrl}
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                  allow="autoplay; encrypted-media; fullscreen"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chapter Stream / Video Upload Modal */}
+      {showImageUpload && selectedChapterForImages && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full">
+            <div className="p-6">
+              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                Tambah Sumber Stream - {selectedChapterForImages.title}
+              </h4>
+
+              {/* Toggle Opsi: Link Stream vs Upload File */}
+              <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setVideoSourceType("url")}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition ${
+                    videoSourceType === "url"
+                      ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                  }`}
+                >
+                  Link Stream (URL Iframe / Video)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoSourceType("file")}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition ${
+                    videoSourceType === "file"
+                      ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                  }`}
+                >
+                  Upload File Video
+                </button>
+              </div>
+
+              <form onSubmit={handleUploadChapterImages} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nama Server
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Mega, Desustream"
+                      value={streamServerName}
+                      onChange={(e) => setStreamServerName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Kualitas
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 720p, 1080p, 360p"
+                      value={streamQuality}
+                      onChange={(e) => setStreamQuality(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {videoSourceType === "url" ? (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Link Stream / Embed URL
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      value={streamUrl}
+                      onChange={(e) => setStreamUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Pilih File Video
+                    </label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) =>
+                        setChapterImages(Array.from(e.target.files))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowImageUpload(false);
+                      setSelectedChapterForImages(null);
+                      setChapterImages([]);
+                      setStreamUrl("");
+                    }}
+                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 text-xs rounded-lg transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs rounded-lg transition-colors font-semibold"
+                  >
+                    Simpan Sumber
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

@@ -5,5 +5,7 @@ const OtakudesuScrapController = require('../controllers/OtakudesuScrapControlle
 router.get('/list', authenticateToken, OtakudesuScrapController.getAnimeList);
 router.post('/scrape-detail', authenticateToken, OtakudesuScrapController.scrapeAnimeDetail);
 router.post('/scrape-videos', authenticateToken, OtakudesuScrapController.scrapeEpisodeVideoSources);
+router.get('/desustream-proxy', OtakudesuScrapController.desustreamProxy);
 
 module.exports = router;
+

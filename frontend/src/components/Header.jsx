@@ -168,7 +168,7 @@ const Header = () => {
               <img
                 src={Logo}
                 alt="Nesiatv"
-                className="w-28 md:w-34 h-auto cursor-pointer"
+                className="w-32 md:w-44 h-auto cursor-pointer"
                 onClick={() => handleNavigate("/")}
               />
             </div>

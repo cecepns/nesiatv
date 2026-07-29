@@ -278,6 +278,20 @@ app.get('/api/v/:episodeSlug', async (req, res) => {
     if (episodes.length > 0) {
       const episode = episodes[0];
 
+      // Increment views counter
+      try {
+        await db.execute(
+          'UPDATE episodes SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          [episode.id]
+        );
+        await db.execute(
+          'UPDATE anime SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          [episode.anime_id]
+        );
+      } catch (viewErr) {
+        console.warn('View increment error:', viewErr.message);
+      }
+
       // Get all video stream links for this episode
       const [videos] = await db.execute(`
         SELECT id, quality, server, url

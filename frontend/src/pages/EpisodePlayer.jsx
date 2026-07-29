@@ -28,6 +28,8 @@ import LoginModal from '../components/LoginModal';
 import ShareModal from '../components/ShareModal';
 import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
 import discordIcon from '../assets/discord.svg';
+import AdBanner from '../components/AdBanner';
+import { useAds } from '../hooks/useAds';
 
 const EpisodePlayer = () => {
   const { episodeSlug } = useParams();
@@ -42,6 +44,67 @@ const EpisodePlayer = () => {
   const [selectedDownloadId, setSelectedDownloadId] = useState('');
   const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
   const [userReaction, setUserReaction] = useState(null);
+
+  // Fetch Ads for Episode Watch Page
+  const { ads: watchHeaderAds } = useAds('manga-detail-top');
+  const { ads: watchFooterAds } = useAds('manga-detail-bottom');
+  const { ads: prerollAds } = useAds('video-preroll');
+
+  // Preroll Ad state (YouTube-like preroll ad before video plays)
+  const [showPreroll, setShowPreroll] = useState(true);
+  const [prerollTimer, setPrerollTimer] = useState(5);
+
+  const [desustreamDirectUrl, setDesustreamDirectUrl] = useState(null);
+  const [resolvingDesustream, setResolvingDesustream] = useState(false);
+
+  useEffect(() => {
+    if (!activeVideo?.url) {
+      setDesustreamDirectUrl(null);
+      return;
+    }
+
+    if (activeVideo.url.includes('desustream.com')) {
+      setResolvingDesustream(true);
+      fetch(`${API_BASE_URL}/otakudesu/desustream-proxy?url=${encodeURIComponent(activeVideo.url)}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.status && json.directUrl) {
+            setDesustreamDirectUrl(json.directUrl);
+          } else {
+            setDesustreamDirectUrl(null);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to resolve desustream link:', err);
+          setDesustreamDirectUrl(null);
+        })
+        .finally(() => {
+          setResolvingDesustream(false);
+        });
+    } else {
+      setDesustreamDirectUrl(null);
+      setResolvingDesustream(false);
+    }
+  }, [activeVideo]);
+
+  useEffect(() => {
+    if (prerollAds && prerollAds.length > 0) {
+      setShowPreroll(true);
+      setPrerollTimer(5);
+      const interval = setInterval(() => {
+        setPrerollTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setShowPreroll(false);
+    }
+  }, [prerollAds, activeVideo]);
 
   useEffect(() => {
     if (!episodeSlug) return;
@@ -207,6 +270,13 @@ const EpisodePlayer = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 mt-6">
+        {/* Watch Header Ad (Paling Atas) */}
+        {watchHeaderAds && watchHeaderAds.length > 0 && (
+          <div className="mb-6">
+            <AdBanner ads={watchHeaderAds} layout="grid" columns={1} />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Left Area: Player & Sources */}
@@ -214,6 +284,32 @@ const EpisodePlayer = () => {
             
             {/* Streaming Container */}
             <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-slate-800 shadow-2xl group">
+              {/* Preroll Video Ad Overlay (Sebelum Play Video - mirip YouTube) */}
+              {showPreroll && prerollAds && prerollAds.length > 0 && !isLockedForUser && (
+                <div className="absolute inset-0 bg-black/95 z-30 flex flex-col items-center justify-center p-4">
+                  <div className="relative w-full max-w-lg">
+                    <span className="absolute -top-6 left-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-900/80 px-2 py-0.5 rounded">
+                      Iklan Video / Sponsor
+                    </span>
+                    <AdBanner ads={prerollAds} layout="grid" columns={1} />
+                  </div>
+                  <div className="mt-4 flex items-center gap-3">
+                    {prerollTimer > 0 ? (
+                      <span className="text-xs font-semibold text-slate-400 bg-slate-900/90 px-4 py-2 rounded-lg border border-slate-800">
+                        Lewati Iklan dalam {prerollTimer}s
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setShowPreroll(false)}
+                        className="text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 px-5 py-2 rounded-lg transition shadow-lg animate-bounce"
+                      >
+                        Lewati Iklan →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {isLockedForUser ? (
                 /* Locked State Player Overlay */
                 <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-10 border border-amber-500/20">
@@ -234,14 +330,31 @@ const EpisodePlayer = () => {
                 </div>
               ) : activeVideo ? (
                 <>
-                  <iframe
-                    key={activeVideo.id}
-                    src={activeVideo.url}
-                    className="absolute inset-0 w-full h-full border-0"
-                    allowFullScreen
-                    scrolling="no"
-                    allow="autoplay; encrypted-media; fullscreen"
-                  />
+                  {resolvingDesustream ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-3">
+                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-xs font-medium">Mengekstrak stream desustream...</span>
+                    </div>
+                  ) : activeVideo.url?.includes('desustream.com') && desustreamDirectUrl ? (
+                    <video
+                      key={desustreamDirectUrl}
+                      controls
+                      autoPlay
+                      className="absolute inset-0 w-full h-full object-contain"
+                    >
+                      <source src={desustreamDirectUrl} type="video/mp4" />
+                      Browser Anda tidak mendukung HTML5 video player.
+                    </video>
+                  ) : (
+                    <iframe
+                      key={activeVideo.id}
+                      src={activeVideo.url}
+                      className="absolute inset-0 w-full h-full border-0"
+                      allowFullScreen
+                      scrolling="no"
+                      allow="autoplay; encrypted-media; fullscreen"
+                    />
+                  )}
                   {streamVideos.length > 1 && (
                     <button
                       onClick={handleNextServer}
@@ -467,6 +580,12 @@ const EpisodePlayer = () => {
               </a>
             </div>
 
+            {/* Watch Footer Ad (Dibawah Episode/Player) */}
+            {watchFooterAds && watchFooterAds.length > 0 && (
+              <div className="mt-4">
+                <AdBanner ads={watchFooterAds} layout="grid" columns={1} />
+              </div>
+            )}
           </div>
 
           {/* Right Area: Mini Info & Number-only Episode Grid */}
