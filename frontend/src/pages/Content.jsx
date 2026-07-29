@@ -50,11 +50,16 @@ const Content = () => {
   const selectedStatus = statusOptions.includes(searchParams.get("status") || "")
     ? searchParams.get("status")
     : "All";
-  const selectedType = typeOptions.some(
-    (type) => type.value === (searchParams.get("type") || ""),
-  )
-    ? searchParams.get("type")
-    : "All";
+  const selectedType = useMemo(() => {
+    const rawType = (searchParams.get("type") || "").trim();
+    if (!rawType) return "All";
+    const matched = typeOptions.find(
+      (type) =>
+        type.value.toLowerCase() === rawType.toLowerCase() ||
+        (type.apiType && type.apiType.toLowerCase() === rawType.toLowerCase())
+    );
+    return matched ? matched.value : "All";
+  }, [searchParams]);
   const selectedOrder = orderOptions.includes(searchParams.get("order") || "")
     ? searchParams.get("order")
     : "Update";

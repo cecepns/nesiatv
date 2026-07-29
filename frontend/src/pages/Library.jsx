@@ -442,7 +442,7 @@ const Library = () => {
                               onClick={() => navigate(`/anime/${item.slug}`)}
                             >
                               <LazyImage
-                                src={getImageUrl(item.cover)}
+                                src={getImageUrl(item.thumbnail || item.cover)}
                                 alt={item.title}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                 wrapperClassName="w-full h-full"
@@ -639,7 +639,7 @@ const Library = () => {
                                 onClick={() => navigate(`/anime/${item.slug}`)}
                               >
                                 <LazyImage
-                                  src={getImageUrl(item.cover)}
+                                  src={getImageUrl(item.thumbnail || item.cover)}
                                   alt={item.title}
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                   wrapperClassName="w-full h-full"
@@ -830,7 +830,7 @@ const Library = () => {
                           onClick={() => navigate(`/anime/${item.mangaSlug}`)}
                         >
                           <LazyImage
-                            src={getImageUrl(item.cover)}
+                            src={getImageUrl(item.thumbnail || item.cover)}
                             alt={item.mangaTitle}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             wrapperClassName="w-full h-full aspect-[3/4]"
@@ -957,7 +957,7 @@ const Library = () => {
                     >
                       <div className="relative aspect-[3/4] overflow-hidden">
                         <LazyImage
-                          src={getImageUrl(item.cover)}
+                          src={getImageUrl(item.thumbnail || item.cover)}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           wrapperClassName="w-full h-full"
