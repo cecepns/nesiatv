@@ -63,7 +63,7 @@ const EpisodePlayer = () => {
       return;
     }
 
-    if (activeVideo.url.includes('desustream.com')) {
+    if (activeVideo.url.includes('desustream.com') || activeVideo.url.includes('desustream.me') || activeVideo.url.includes('desustream')) {
       setResolvingDesustream(true);
       fetch(`${API_BASE_URL}/otakudesu/desustream-proxy?url=${encodeURIComponent(activeVideo.url)}`)
         .then((res) => res.json())
@@ -335,7 +335,7 @@ const EpisodePlayer = () => {
                       <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-xs font-medium">Mengekstrak stream desustream...</span>
                     </div>
-                  ) : activeVideo.url?.includes('desustream.com') && desustreamDirectUrl ? (
+                  ) : (activeVideo.url?.includes('desustream.com') || activeVideo.url?.includes('desustream.me') || activeVideo.url?.includes('desustream')) && desustreamDirectUrl ? (
                     <video
                       key={desustreamDirectUrl}
                       controls
