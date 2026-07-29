@@ -252,49 +252,59 @@ app.get('/api/v/:episodeSlug', async (req, res) => {
   try {
     const { episodeSlug } = req.params;
 
-    const [episodes] = await db.execute(`
-      SELECT 
-        e.id,
-        e.episode_number as number,
-        e.title,
-        e.slug,
-        e.anime_id,
-        a.slug as anime_slug,
-        a.title as anime_title,
-        a.thumbnail as anime_cover,
-        a.synopsis as anime_synopsis,
-        a.japanese_name as anime_author,
-        a.content_type,
-        a.rating,
-        a.bookmark_count,
-        a.views as total_views,
-        a.release,
-        a.status
-      FROM episodes e
-      JOIN anime a ON e.anime_id = a.id
-      WHERE e.slug = ?
-    `, [episodeSlug]);
+    // 1. Find episode by slug
+    const [epRows] = await db.execute(
+      'SELECT id, anime_id FROM episodes WHERE slug = ?',
+      [episodeSlug]
+    );
 
-    if (episodes.length > 0) {
-      const episode = episodes[0];
+    if (epRows.length > 0) {
+      const epInfo = epRows[0];
 
-      // Increment views counter
+      // 2. Increment views counter BEFORE fetching full details so response has updated views
       try {
         await db.execute(
           'UPDATE episodes SET views = COALESCE(views, 0) + 1 WHERE id = ?',
-          [episode.id]
+          [epInfo.id]
         );
         await db.execute(
           'UPDATE anime SET views = COALESCE(views, 0) + 1 WHERE id = ?',
-          [episode.anime_id]
+          [epInfo.anime_id]
         );
         await db.execute(
           'INSERT INTO anime_view_events (anime_id) VALUES (?)',
-          [episode.anime_id]
+          [epInfo.anime_id]
         ).catch(() => {});
       } catch (viewErr) {
         console.warn('View increment error:', viewErr.message);
       }
+
+      // 3. Fetch full episode & anime details with updated views
+      const [episodes] = await db.execute(`
+        SELECT 
+          e.id,
+          e.episode_number as number,
+          e.title,
+          e.slug,
+          e.anime_id,
+          COALESCE(e.views, 0) as views,
+          a.slug as anime_slug,
+          a.title as anime_title,
+          a.thumbnail as anime_cover,
+          a.synopsis as anime_synopsis,
+          a.japanese_name as anime_author,
+          a.content_type,
+          a.rating,
+          a.bookmark_count,
+          COALESCE(a.views, 0) as total_views,
+          a.release,
+          a.status
+        FROM episodes e
+        JOIN anime a ON e.anime_id = a.id
+        WHERE e.id = ?
+      `, [epInfo.id]);
+
+      const episode = episodes[0];
 
       // Get all video stream links for this episode
       const [videos] = await db.execute(`
@@ -303,13 +313,14 @@ app.get('/api/v/:episodeSlug', async (req, res) => {
         WHERE episode_id = ?
       `, [episode.id]);
 
-      // Get all episodes for this anime (for navigation)
+      // Get all episodes for this anime (for navigation & view counts)
       const [allEpisodes] = await db.execute(`
         SELECT 
           e.id,
           e.episode_number as number,
           e.title,
           e.slug,
+          COALESCE(e.views, 0) as views,
           e.created_at,
           UNIX_TIMESTAMP(e.created_at) as created_at_timestamp
         FROM episodes e
@@ -348,6 +359,7 @@ app.get('/api/v/:episodeSlug', async (req, res) => {
           number: ep.number,
           title: ep.title || `Episode ${ep.number}`,
           slug: ep.slug,
+          views: ep.views || 0,
           created_at: {
             time: parseInt(ep.created_at_timestamp, 10),
             formatted: new Date(ep.created_at).toLocaleString('id-ID')

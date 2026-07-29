@@ -286,6 +286,8 @@ const AdPopup = () => {
 function AdItem({ ad, onAdClick }) {
   const alt = ad.image_alt || ad.title || 'Advertisement';
   const title = ad.title || ad.image_alt || '';
+  const isVideo = ad.image && /\.(mp4|webm|mkv|mov|avi)($|\?)/i.test(ad.image);
+
   return (
     <div
       onClick={() => onAdClick(ad)}
@@ -294,13 +296,24 @@ function AdItem({ ad, onAdClick }) {
       }`}
       title={title || undefined}
     >
-      <LazyImage
-        src={getImageUrl(ad.image)}
-        alt={alt}
-        title={title || undefined}
-        className="w-full h-full object-cover"
-        wrapperClassName="w-full h-full min-h-0 flex items-center justify-center"
-      />
+      {isVideo ? (
+        <video
+          src={getImageUrl(ad.image)}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <LazyImage
+          src={getImageUrl(ad.image)}
+          alt={alt}
+          title={title || undefined}
+          className="w-full h-full object-cover"
+          wrapperClassName="w-full h-full min-h-0 flex items-center justify-center"
+        />
+      )}
     </div>
   );
 }

@@ -271,18 +271,25 @@ const AdsManager = () => {
     }
   };
 
+  const isVideoUrl = (url) => {
+    if (!url) return false;
+    return /\.(mp4|webm|mkv|mov|avi)($|\?)/i.test(url) || (typeof url === 'string' && url.startsWith('data:video/'));
+  };
+
   const handleImageChange = (e, isEdit = false) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mkv|mov|avi)$/i.test(file.name);
+      const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|gif|webp)$/i.test(file.name);
+
+      if (!isImage && !isVideo) {
+        alert('Silakan pilih file gambar (JPG, PNG, GIF, WEBP) atau video (MP4, WebM)');
         return;
       }
       
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+      const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert(`Ukuran file terlalu besar (Maksimal ${isVideo ? '100MB' : '10MB'})`);
         return;
       }
 
@@ -292,12 +299,14 @@ const AdsManager = () => {
           setEditingAd(prev => ({
             ...prev,
             image: file,
+            isVideo,
             imagePreview: reader.result
           }));
         } else {
           setNewAd(prev => ({
             ...prev,
             image: file,
+            isVideo,
             imagePreview: reader.result
           }));
         }
@@ -695,20 +704,28 @@ const AdsManager = () => {
               <div className="mt-1 flex items-center space-x-4">
                 <label className="flex flex-col items-center justify-center w-48 h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   {newAd.imagePreview ? (
-                    <img 
-                      src={newAd.imagePreview} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover rounded-lg"
-                    />
+                    isVideoUrl(newAd.imagePreview) || newAd.isVideo ? (
+                      <video 
+                        src={newAd.imagePreview} 
+                        controls 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <img 
+                        src={newAd.imagePreview} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    )
                   ) : (
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <ImageIcon className="w-10 h-10 mb-2 text-gray-400" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Klik untuk upload</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Klik untuk upload gambar / video MP4</p>
                     </div>
                   )}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*,.mp4,.webm,.mkv,.mov,.avi"
                     onChange={(e) => handleImageChange(e, false)}
                     className="hidden"
                     required
@@ -716,7 +733,7 @@ const AdsManager = () => {
                 </label>
               </div>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Format: JPG, PNG, GIF, WEBP. Maksimal 5MB
+                Format: JPG, PNG, GIF, WEBP, MP4, WebM. Maksimal 100MB untuk video, 10MB untuk gambar
               </p>
             </div>
             <div>
@@ -863,17 +880,25 @@ const AdsManager = () => {
                         <div className="flex items-center space-x-4">
                           <label className="flex flex-col items-center justify-center w-24 h-16 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             {editingAd.imagePreview ? (
-                              <img 
-                                src={editingAd.imagePreview} 
-                                alt="Preview" 
-                                className="w-full h-full object-cover rounded-lg"
-                              />
+                              isVideoUrl(editingAd.imagePreview) || editingAd.isVideo ? (
+                                <video 
+                                  src={editingAd.imagePreview} 
+                                  className="w-full h-full object-cover rounded-lg"
+                                  muted
+                                />
+                              ) : (
+                                <img 
+                                  src={editingAd.imagePreview} 
+                                  alt="Preview" 
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              )
                             ) : (
                               <ImageIcon className="w-6 h-6 text-gray-400" />
                             )}
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/*,video/*,.mp4,.webm,.mkv,.mov,.avi"
                               onChange={(e) => handleImageChange(e, true)}
                               className="hidden"
                             />
@@ -882,14 +907,25 @@ const AdsManager = () => {
                       ) : (
                         <div className="w-24 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                           {ad.image ? (
-                            <img 
-                              src={getImageUrl(ad.image)} 
-                              alt="Ad" 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.src = '/broken-image.png';
-                              }}
-                            />
+                            isVideoUrl(ad.image) ? (
+                              <video 
+                                src={getImageUrl(ad.image)} 
+                                className="w-full h-full object-cover"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                              />
+                            ) : (
+                              <img 
+                                src={getImageUrl(ad.image)} 
+                                alt="Ad" 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = '/broken-image.png';
+                                }}
+                              />
+                            )
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <ImageIcon className="w-6 h-6 text-gray-400" />

@@ -19,6 +19,8 @@ const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
     }
   };
 
+  const isVideo = (url) => url && /\.(mp4|webm|mkv|mov|avi)($|\?)/i.test(url);
+
   if (layout === 'carousel') {
     return (
       <div className={`flex overflow-x-auto pb-2 scrollbar-hide ${className}`}>
@@ -34,13 +36,24 @@ const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
               }`}
               title={title || undefined}
             >
-              <LazyImage
-                src={getImageUrl(ad.image)}
-                alt={alt}
-                title={title || undefined}
-                className="rounded-lg shadow-md"
-                wrapperClassName="w-full"
-              />
+              {isVideo(ad.image) ? (
+                <video
+                  src={getImageUrl(ad.image)}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="rounded-lg shadow-md max-h-60 object-cover"
+                />
+              ) : (
+                <LazyImage
+                  src={getImageUrl(ad.image)}
+                  alt={alt}
+                  title={title || undefined}
+                  className="rounded-lg shadow-md"
+                  wrapperClassName="w-full"
+                />
+              )}
             </div>
           );
         })}
@@ -72,13 +85,24 @@ const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
             }`}
             title={title || undefined}
           >
-            <LazyImage
-              src={getImageUrl(ad.image)}
-              alt={alt}
-              title={title || undefined}
-              className="w-full rounded-lg shadow-md"
-              wrapperClassName="w-full"
-            />
+            {isVideo(ad.image) ? (
+              <video
+                src={getImageUrl(ad.image)}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full rounded-lg shadow-md object-cover"
+              />
+            ) : (
+              <LazyImage
+                src={getImageUrl(ad.image)}
+                alt={alt}
+                title={title || undefined}
+                className="w-full rounded-lg shadow-md"
+                wrapperClassName="w-full"
+              />
+            )}
           </div>
         );
       })}
