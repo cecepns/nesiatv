@@ -281,13 +281,17 @@ app.get('/api/v/:episodeSlug', async (req, res) => {
       // Increment views counter
       try {
         await db.execute(
-          'UPDATE episodes SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          'UPDATE episodes SET views = COALESCE(views, 0) + 1 WHERE id = ?',
           [episode.id]
         );
         await db.execute(
-          'UPDATE anime SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          'UPDATE anime SET views = COALESCE(views, 0) + 1 WHERE id = ?',
           [episode.anime_id]
         );
+        await db.execute(
+          'INSERT INTO anime_view_events (anime_id) VALUES (?)',
+          [episode.anime_id]
+        ).catch(() => {});
       } catch (viewErr) {
         console.warn('View increment error:', viewErr.message);
       }

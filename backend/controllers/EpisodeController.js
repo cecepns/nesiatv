@@ -53,11 +53,11 @@ const showBySlug = async (req, res) => {
 
       try {
         await db.execute(
-          'UPDATE episodes SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          'UPDATE episodes SET views = COALESCE(views, 0) + 1 WHERE id = ?',
           [episode.id]
         );
         await db.execute(
-          'UPDATE anime SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          'UPDATE anime SET views = COALESCE(views, 0) + 1 WHERE id = ?',
           [episode.anime_id]
         );
       } catch (viewErr) {
