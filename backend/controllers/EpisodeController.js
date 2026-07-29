@@ -56,6 +56,10 @@ const showBySlug = async (req, res) => {
           'UPDATE episodes SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
           [episode.id]
         );
+        await db.execute(
+          'UPDATE anime SET views = COALESCE(views, 0) + 1, updated_at = updated_at WHERE id = ?',
+          [episode.anime_id]
+        );
       } catch (viewErr) {
         console.warn('Episode view increment failed:', viewErr.message);
       }

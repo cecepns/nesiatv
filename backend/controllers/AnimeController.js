@@ -157,7 +157,8 @@ const showBySlug = async (req, res) => {
     const [episodes] = await db.execute(
       `
       SELECT 
-        e.*, 
+        e.*,
+        COALESCE(e.views, 0) as views,
         COUNT(DISTINCT ev.id) as video_count,
         (SELECT COUNT(*) FROM episode_reactions er WHERE er.episode_id = e.id) as reactions
       FROM episodes e

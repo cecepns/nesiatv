@@ -1187,10 +1187,10 @@ const MangaManager = () => {
                                 setChapterImages([]);
                                 setShowImageUpload(true);
                               }}
-                              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                              title="Upload Gambar"
+                              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex items-center gap-1"
+                              title="Tambah Sumber Stream / Link Video"
                             >
-                              <Upload className="h-4 w-4" />
+                              <Plus className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleEditChapter(chapter)}
@@ -1218,13 +1218,22 @@ const MangaManager = () => {
                               </div>
                             ) : (
                               <>
-                                {chapterImagesMap[chapter.id] &&
-                                  chapterImagesMap[chapter.id].length > 0 ? (
+                                {chapterImagesMap[chapter.id] && chapterImagesMap[chapter.id].length > 0 ? (
                                   <div className="space-y-3">
-                                    <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-gray-600">
                                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                         Daftar Sumber Video / Stream Server ({chapterImagesMap[chapter.id].length}):
                                       </p>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedChapterForImages(chapter);
+                                          setShowImageUpload(true);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition shadow"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>Tambah Sumber Stream</span>
+                                      </button>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                       {chapterImagesMap[chapter.id].map((video) => (
