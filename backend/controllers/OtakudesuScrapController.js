@@ -428,10 +428,102 @@ const desustreamProxy = async (req, res) => {
   }
 };
 
+// Proxy desustream page as HTML iframe embed player
+const desustreamFrameProxy = async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).send('URL parameter is required');
+  }
+
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        ...DEFAULT_HEADERS,
+        'Referer': 'https://otakudesu.blog',
+      },
+      timeout: 10000,
+    });
+
+    const $ = cheerio.load(response.data);
+    const videoSource = $('video source').attr('src') || $('source').attr('src');
+
+    if (videoSource) {
+      res.setHeader('Content-Type', 'text/html');
+      const streamProxyUrl = `/api/otakudesu/video-stream?url=${encodeURIComponent(videoSource)}`;
+      return res.send(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; background:#000; }
+  html, body { width:100%; height:100%; overflow:hidden; display:flex; justify-content:center; align-items:center; }
+  video { width:100%; height:100%; max-height:100vh; object-fit:contain; }
+</style>
+</head>
+<body>
+  <video controls autoplay playsinline controlsList="nodownload">
+    <source src="${streamProxyUrl}" type="video/mp4" />
+    <source src="${videoSource}" type="video/mp4" />
+  </video>
+</body>
+</html>`);
+    }
+
+    return res.status(404).send('Video source not found');
+  } catch (error) {
+    return res.status(500).send('Error fetching video player: ' + error.message);
+  }
+};
+
+// Video Stream Proxy to bypass hotlink / domain protection on video source
+const streamVideoProxy = async (req, res) => {
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).send('URL parameter is required');
+  }
+
+  try {
+    const videoResponse = await axios({
+      method: 'get',
+      url,
+      headers: {
+        'User-Agent': DEFAULT_HEADERS['User-Agent'],
+        'Referer': 'https://otakudesu.blog',
+        'Range': req.headers.range || 'bytes=0-',
+      },
+      responseType: 'stream',
+      timeout: 20000,
+    });
+
+    if (videoResponse.headers['content-type']) {
+      res.setHeader('Content-Type', videoResponse.headers['content-type']);
+    }
+    if (videoResponse.headers['content-length']) {
+      res.setHeader('Content-Length', videoResponse.headers['content-length']);
+    }
+    if (videoResponse.headers['content-range']) {
+      res.setHeader('Content-Range', videoResponse.headers['content-range']);
+      res.status(206);
+    }
+    if (videoResponse.headers['accept-ranges']) {
+      res.setHeader('Accept-Ranges', videoResponse.headers['accept-ranges']);
+    }
+
+    videoResponse.data.pipe(res);
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(500).send('Streaming error: ' + error.message);
+    }
+  }
+};
+
 module.exports = {
   getAnimeList,
   scrapeAnimeDetail,
   scrapeEpisodeVideoSources,
   desustreamProxy,
+  desustreamFrameProxy,
+  streamVideoProxy,
 };
 

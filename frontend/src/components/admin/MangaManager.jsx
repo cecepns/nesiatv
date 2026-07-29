@@ -66,6 +66,7 @@ const MangaManager = () => {
   const [selectedChapterForImages, setSelectedChapterForImages] =
     useState(null);
   const [chapterImages, setChapterImages] = useState([]);
+  const [editingStream, setEditingStream] = useState(null); // track stream source being edited
   const [videoSourceType, setVideoSourceType] = useState("url"); // "url" or "file"
   const [streamServerName, setStreamServerName] = useState("Primary");
   const [streamQuality, setStreamQuality] = useState("720p");
@@ -468,6 +469,10 @@ const MangaManager = () => {
     if (!selectedChapterForImages) return;
 
     try {
+      if (editingStream?.id) {
+        await apiClient.deleteEpisodeVideo(selectedChapterForImages.id, editingStream.id);
+      }
+
       if (videoSourceType === "url") {
         if (!streamUrl.trim()) {
           alert("URL Stream wajib diisi!");
@@ -480,31 +485,37 @@ const MangaManager = () => {
           url: streamUrl.trim(),
         });
       } else {
-        if (chapterImages.length === 0) {
-          alert("Pilih file video atau gambar terlebih dahulu!");
+        if (chapterImages.length === 0 && !editingStream) {
+          alert("Pilih file video terlebih dahulu!");
           return;
         }
         const formData = new FormData();
         formData.append("episode_id", selectedChapterForImages.id);
         formData.append("server", streamServerName || "Primary");
         formData.append("quality", streamQuality || "720p");
-        formData.append("video_file", chapterImages[0]);
+        if (chapterImages[0]) {
+          formData.append("video_file", chapterImages[0]);
+        }
 
         await apiClient.addEpisodeVideo(formData);
       }
 
       setShowImageUpload(false);
+      const chapterIdToRefresh = selectedChapterForImages.id;
       setSelectedChapterForImages(null);
+      setEditingStream(null);
       setChapterImages([]);
       setStreamUrl("");
+      setStreamServerName("Primary");
+      setStreamQuality("720p");
       await fetchChapters(selectedMangaForChapters.id);
-      if (expandedChapters[selectedChapterForImages.id]) {
-        await fetchChapterImages(selectedChapterForImages.id);
+      if (expandedChapters[chapterIdToRefresh]) {
+        await fetchChapterImages(chapterIdToRefresh);
       }
-      alert("Sumber video/stream berhasil ditambahkan!");
+      alert(editingStream ? "Sumber stream berhasil diperbarui!" : "Sumber video/stream berhasil ditambahkan!");
     } catch (error) {
-      console.error("Error adding stream source:", error);
-      alert("Gagal menambahkan sumber stream: " + error.message);
+      console.error("Error saving stream source:", error);
+      alert("Gagal menyimpan sumber stream: " + error.message);
     }
   };
 
@@ -1264,6 +1275,26 @@ const MangaManager = () => {
                                               <span>Preview</span>
                                             </button>
                                             <button
+                                              onClick={() => {
+                                                setSelectedChapterForImages(chapter);
+                                                setEditingStream(video);
+                                                setStreamServerName(video.server || "Primary");
+                                                setStreamQuality(video.quality || "720p");
+                                                if (video.url && video.url.startsWith("http")) {
+                                                  setVideoSourceType("url");
+                                                  setStreamUrl(video.url);
+                                                } else {
+                                                  setVideoSourceType("file");
+                                                  setStreamUrl("");
+                                                }
+                                                setShowImageUpload(true);
+                                              }}
+                                              className="p-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded transition"
+                                              title="Edit Sumber Stream"
+                                            >
+                                              <PencilIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
                                               onClick={() => handleDeleteChapterImage(chapter.id, video.id)}
                                               className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition"
                                               title="Hapus Link"
@@ -1339,7 +1370,7 @@ const MangaManager = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full">
             <div className="p-6">
               <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                Tambah Sumber Stream - {selectedChapterForImages.title}
+                {editingStream ? "Edit Sumber Stream" : "Tambah Sumber Stream"} - {selectedChapterForImages.title}
               </h4>
 
               {/* Toggle Opsi: Link Stream vs Upload File */}
@@ -1646,62 +1677,7 @@ const MangaManager = () => {
         </div>
       )}
 
-      {/* Chapter Image Upload Modal */}
-      {showImageUpload && selectedChapterForImages && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full">
-            <div className="p-6">
-              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
-                Upload Gambar Chapter - {selectedChapterForImages.title}
-              </h4>
 
-              <form onSubmit={handleUploadChapterImages} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Pilih Gambar (Multiple)
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) =>
-                      setChapterImages(Array.from(e.target.files))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                  />
-                  {chapterImages.length > 0 && (
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      {chapterImages.length} gambar dipilih
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowImageUpload(false);
-                      setSelectedChapterForImages(null);
-                      setChapterImages([]);
-                    }}
-                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={chapterImages.length === 0}
-                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Upload
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Manga Grid */}
       {loading && (manga || []).length === 0 ? (

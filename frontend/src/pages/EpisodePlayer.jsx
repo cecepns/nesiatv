@@ -330,21 +330,15 @@ const EpisodePlayer = () => {
                 </div>
               ) : activeVideo ? (
                 <>
-                  {resolvingDesustream ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 gap-3">
-                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-xs font-medium">Mengekstrak stream desustream...</span>
-                    </div>
-                  ) : (activeVideo.url?.includes('desustream.com') || activeVideo.url?.includes('desustream.me') || activeVideo.url?.includes('desustream')) && desustreamDirectUrl ? (
-                    <video
-                      key={desustreamDirectUrl}
-                      controls
-                      autoPlay
-                      className="absolute inset-0 w-full h-full object-contain"
-                    >
-                      <source src={desustreamDirectUrl} type="video/mp4" />
-                      Browser Anda tidak mendukung HTML5 video player.
-                    </video>
+                  {(activeVideo.url?.includes('desustream.com') || activeVideo.url?.includes('desustream.me') || activeVideo.url?.includes('desustream')) ? (
+                    <iframe
+                      key={activeVideo.id || activeVideo.url}
+                      src={`${API_BASE_URL}/otakudesu/desustream-frame?url=${encodeURIComponent(activeVideo.url)}`}
+                      className="absolute inset-0 w-full h-full border-0"
+                      allowFullScreen
+                      scrolling="no"
+                      allow="autoplay; encrypted-media; fullscreen"
+                    />
                   ) : (
                     <iframe
                       key={activeVideo.id}
