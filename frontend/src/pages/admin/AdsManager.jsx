@@ -22,7 +22,7 @@ const AdsManager = () => {
     home_popup_interval_minutes: 30,
     popup_ads_initial_delay_minutes: 5,
     popup_ads_unlock_seconds: 10,
-    redirect_script_urls: ['https://mbuh.my.id/siap/1770790072377-nesiatv.js'],
+    redirect_script_urls: [],
     cdn_domain: 'https://cdn.nesiatv.net',
   });
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -225,9 +225,7 @@ const AdsManager = () => {
           home_popup_interval_minutes: value?.home_popup_interval_minutes ?? 30,
           popup_ads_initial_delay_minutes: value?.popup_ads_initial_delay_minutes ?? 5,
           popup_ads_unlock_seconds: value?.popup_ads_unlock_seconds ?? 10,
-          redirect_script_urls: urls.length
-            ? urls
-            : ['https://mbuh.my.id/siap/1770790072377-nesiatv.js'],
+          redirect_script_urls: urls,
           cdn_domain: value?.cdn_domain ?? 'https://cdn.nesiatv.net',
         });
       })
@@ -255,7 +253,7 @@ const AdsManager = () => {
       nextUrls.splice(index, 1);
       return {
         ...prev,
-        redirect_script_urls: nextUrls.length ? nextUrls : [''],
+        redirect_script_urls: nextUrls,
       };
     });
   };

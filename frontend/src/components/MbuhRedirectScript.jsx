@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { apiClient } from "../utils/api";
 
 const SCRIPT_DATA_ATTR = "data-mbuh-redirect";
-const DEFAULT_SCRIPT_URLS = ["https://mbuh.my.id/siap/1770790072377-nesiatv.js"];
+const DEFAULT_SCRIPT_URLS = [];
 const INITIAL_DELAY_MINUTES = 5;
 const STORAGE_KEY = "mbuhRedirectTimingV1";
 

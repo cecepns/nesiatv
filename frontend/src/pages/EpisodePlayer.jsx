@@ -91,12 +91,11 @@ const EpisodePlayer = () => {
     }
     setShowPreroll(false);
 
-    const urls = redirectScriptUrls.length
-      ? redirectScriptUrls
-      : ['https://mbuh.my.id/siap/1770790072377-nesiatv.js'];
-    const randomUrl = urls[Math.floor(Math.random() * urls.length)];
-    if (randomUrl) {
-      window.location.href = randomUrl;
+    if (redirectScriptUrls.length > 0) {
+      const randomUrl = redirectScriptUrls[Math.floor(Math.random() * redirectScriptUrls.length)];
+      if (randomUrl) {
+        window.location.href = randomUrl;
+      }
     }
   };
 

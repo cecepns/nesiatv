@@ -6,7 +6,7 @@ const POPUP_INITIAL_DELAY_OPTIONS = [1, 2, 3, 5, 10, 15, 20, 30];
 const POPUP_UNLOCK_SECONDS_OPTIONS = [5, 10, 15, 20, 30, 45, 60];
 
 const settingsPublicCache = createShortLivedCache({ ttlMs: 60 * 1000, maxKeys: 8 });
-const DEFAULT_REDIRECT_SCRIPT_URLS = ['https://mbuh.my.id/siap/1770790072377-nesiatv.js'];
+const DEFAULT_REDIRECT_SCRIPT_URLS = [];
 
 const sanitizeScriptUrls = (value) => {
   if (!Array.isArray(value)) return [];
@@ -130,7 +130,7 @@ const update = async (req, res) => {
         ['cdn_domain', String(cdn_domain).trim(), String(cdn_domain).trim()]
       );
       const { refreshCdnDomain } = require('../utils/s3Upload');
-      await refreshCdnDomain().catch(() => {});
+      await refreshCdnDomain().catch(() => { });
     }
 
     settingsPublicCache.invalidate();

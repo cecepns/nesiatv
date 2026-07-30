@@ -210,12 +210,7 @@ const AdPopup = () => {
   };
 
   const handleSkipAd = () => {
-    const urls = redirectScriptUrls.length
-      ? redirectScriptUrls
-      : sanitizeRedirectUrls(['https://mbuh.my.id/siap/1770790072377-nesiatv.js']);
-    if (!urls.length) return;
-
-    const randomUrl = urls[Math.floor(Math.random() * urls.length)];
+    const urls = redirectScriptUrls;
 
     try {
       const now = Date.now();
@@ -240,7 +235,10 @@ const AdPopup = () => {
     }
 
     setIsOpen(false);
-    window.location.href = randomUrl;
+    if (urls.length > 0) {
+      const randomUrl = urls[Math.floor(Math.random() * urls.length)];
+      window.location.href = randomUrl;
+    }
   };
 
   const handleAdClick = (ad) => {
