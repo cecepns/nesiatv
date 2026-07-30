@@ -41,6 +41,9 @@ export default defineConfig({
       workbox: {
         mode: 'development',
         navigateFallbackDenylist: [/^\/admin/, /^\/login/],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
