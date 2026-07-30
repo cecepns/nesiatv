@@ -68,38 +68,14 @@ const EpisodePlayer = () => {
   }, []);
 
   useEffect(() => {
-    if (!episodeSlug) return;
-    try {
-      const isSkipped = localStorage.getItem(`preroll_skipped_${episodeSlug}`) === 'true';
-      if (isSkipped) {
-        setShowPreroll(false);
-      } else {
-        setShowPreroll(true);
-      }
-    } catch {
-      setShowPreroll(true);
-    }
+    setShowPreroll(true);
   }, [episodeSlug]);
 
   const handlePrerollEnded = () => {
-    if (episodeSlug) {
-      try {
-        localStorage.setItem(`preroll_skipped_${episodeSlug}`, 'true');
-      } catch (e) {
-        console.error(e);
-      }
-    }
     setShowPreroll(false);
   };
 
   const handleSkipPreroll = () => {
-    if (episodeSlug) {
-      try {
-        localStorage.setItem(`preroll_skipped_${episodeSlug}`, 'true');
-      } catch (e) {
-        console.error(e);
-      }
-    }
     setShowPreroll(false);
 
     if (redirectScriptUrls.length > 0) {
