@@ -26,8 +26,7 @@ import CommentSection from '../components/CommentSection';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 import ShareModal from '../components/ShareModal';
-import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
-import discordIcon from '../assets/discord.svg';
+import { saveToHistory } from '../utils/historyManager';
 import AdBanner from '../components/AdBanner';
 import { useAds } from '../hooks/useAds';
 
@@ -134,6 +133,23 @@ const EpisodePlayer = () => {
           const videoList = json.data.videos || [];
           const firstStream = videoList.find(v => !v.quality?.includes('Download') && !v.url?.includes('link.desustream.com')) || videoList[0];
           setActiveVideo(firstStream || null);
+          // Save to history
+          if (json.data) {
+            const animeTitle = json.data.anime_title || json.data.title || json.data.content?.title || json.data.anime?.title;
+            const animeSlug = json.data.anime_slug || json.data.content?.slug || json.data.anime?.slug;
+            const cover = json.data.anime_cover || json.data.cover || json.data.thumbnail || json.data.cover_background || json.data.content?.cover;
+            if (animeSlug && animeTitle) {
+              saveToHistory({
+                mangaSlug: animeSlug,
+                mangaTitle: animeTitle,
+                cover: cover,
+                episodeSlug: episodeSlug,
+                chapterNumber: json.data.number || json.data.episode_number,
+                chapterTitle: json.data.title,
+                chapterCreatedAt: json.data.created_at,
+              });
+            }
+          }
         } else {
           toast.error(json.error || 'Gagal memuat episode');
         }

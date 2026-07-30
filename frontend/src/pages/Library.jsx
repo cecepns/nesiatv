@@ -259,7 +259,8 @@ const Library = () => {
       .getAnime(1, 40, mangaPickerDebounced, "", "all")
       .then((res) => {
         if (!cancelled) {
-          setMangaPickerResults(Array.isArray(res.manga) ? res.manga : []);
+          const list = Array.isArray(res?.data) ? res.data : Array.isArray(res?.manga) ? res.manga : [];
+          setMangaPickerResults(list);
         }
       })
       .catch(() => {
@@ -617,14 +618,14 @@ const Library = () => {
                             Playlist masih kosong
                           </p>
                           <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-                            Tambahkan manga lewat pencarian (bisa pilih banyak sekaligus)
+                            Tambahkan anime lewat pencarian (bisa pilih banyak sekaligus)
                           </p>
                           <button
                             type="button"
                             onClick={() => setAddMangaOpen(true)}
                             className={contentCtaPrimary}
                           >
-                            Tambah manga
+                            Tambah anime
                           </button>
                         </div>
                       ) : (
@@ -655,7 +656,7 @@ const Library = () => {
                                         .then(() => loadReadlists());
                                     }}
                                     className={dangerIconBtnClass}
-                                    title="Hapus dari readlist"
+                                    title="Hapus dari playlist"
                                   >
                                     <Trash2 className="h-4 w-4" aria-hidden />
                                   </button>
@@ -681,10 +682,10 @@ const Library = () => {
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                        Readlist
+                        Playlist
                       </h2>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Buat daftar baca sendiri dan isi dengan manga favorit (multi-pilih)
+                        Buat daftar tonton sendiri dan isi dengan anime favorit (multi-pilih)
                       </p>
                     </div>
                     <button
@@ -696,7 +697,7 @@ const Library = () => {
                       className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold ${contentCtaPrimary}`}
                     >
                       <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                      Buat readlist
+                      Buat playlist
                     </button>
                   </div>
                   {readlistsLoading ? (
@@ -709,10 +710,10 @@ const Library = () => {
                     <div className="text-center py-12 bg-gray-100 dark:bg-white/[0.04] dark:border dark:border-white/10 rounded-lg">
                       <ListChecks className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">
-                        Belum ada readlist
+                        Belum ada playlist
                       </p>
                       <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-                        Buat readlist pertama untuk mulai mengatur koleksi baca
+                        Buat playlist pertama untuk mulai mengatur koleksi tontonan
                       </p>
                       <button
                         type="button"
@@ -722,7 +723,7 @@ const Library = () => {
                         }}
                         className={contentCtaPrimary}
                       >
-                        Buat readlist
+                        Buat playlist
                       </button>
                     </div>
                   ) : (
@@ -736,7 +737,7 @@ const Library = () => {
                             {rl.title}
                           </h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                            {Number(rl.manga_count) || 0} manga
+                            {Number(rl.manga_count || rl.anime_count) || 0} anime
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -1123,7 +1124,7 @@ const Library = () => {
                 id="readlist-add-manga-title"
                 className="text-lg font-bold text-gray-900 dark:text-gray-100"
               >
-                Tambah manga ke readlist
+                Tambah anime ke playlist
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Ketik minimal 2 huruf untuk mencari; centang beberapa lalu tambahkan sekaligus.
@@ -1132,7 +1133,7 @@ const Library = () => {
                 type="search"
                 value={mangaPickerQuery}
                 onChange={(e) => setMangaPickerQuery(e.target.value)}
-                placeholder="Cari judul manga…"
+                placeholder="Cari judul anime…"
                 className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none ring-sky-500/30 focus:ring-2 dark:border-white/15 dark:bg-primary-900/40 dark:text-gray-100"
               />
             </div>
