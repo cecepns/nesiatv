@@ -27,6 +27,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 import ShareModal from '../components/ShareModal';
 import { REACTION_OPTIONS, emptyReactionCounts } from '../constants/reactions';
+import discordIcon from '../assets/discord.svg';
 import { saveToHistory } from '../utils/historyManager';
 import AdBanner from '../components/AdBanner';
 import { useAds } from '../hooks/useAds';
