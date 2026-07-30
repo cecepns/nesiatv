@@ -251,6 +251,22 @@ const EpisodePlayer = () => {
     toast.info(`Mencoba berpindah ke ${nextServer.server} (${nextServer.quality})`);
   };
 
+  const getAutoPlayUrl = (url) => {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      if (!u.searchParams.has('autoplay') && !u.searchParams.has('auto')) {
+        u.searchParams.set('autoplay', '1');
+      }
+      return u.toString();
+    } catch {
+      if (!url.includes('autoplay=') && !url.includes('auto=')) {
+        return url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
+      }
+      return url;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-12">
       <Helmet>
@@ -333,8 +349,8 @@ const EpisodePlayer = () => {
                 <>
                   {(activeVideo.url?.includes('desustream.com') || activeVideo.url?.includes('desustream.me') || activeVideo.url?.includes('desustream')) ? (
                     <iframe
-                      key={activeVideo.id || activeVideo.url}
-                      src={`${API_BASE_URL}/otakudesu/desustream-frame?url=${encodeURIComponent(activeVideo.url)}`}
+                      key={`${activeVideo.id || activeVideo.url}-${showPreroll ? 'preroll' : 'play'}`}
+                      src={`${API_BASE_URL}/otakudesu/desustream-frame?url=${encodeURIComponent(activeVideo.url)}${!showPreroll ? '&autoplay=1' : ''}`}
                       className="absolute inset-0 w-full h-full border-0"
                       allowFullScreen
                       scrolling="no"
@@ -342,8 +358,8 @@ const EpisodePlayer = () => {
                     />
                   ) : (
                     <iframe
-                      key={activeVideo.id}
-                      src={activeVideo.url}
+                      key={`${activeVideo.id}-${showPreroll ? 'preroll' : 'play'}`}
+                      src={!showPreroll ? getAutoPlayUrl(activeVideo.url) : activeVideo.url}
                       className="absolute inset-0 w-full h-full border-0"
                       allowFullScreen
                       scrolling="no"
