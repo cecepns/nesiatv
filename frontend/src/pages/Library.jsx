@@ -784,10 +784,10 @@ const Library = () => {
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                    Riwayat Baca
+                    Riwayat Tonton
                   </h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Maksimal 100 manga, ditampilkan 10 per halaman
+                    Maksimal 100 anime, ditampilkan 10 per halaman
                   </p>
                 </div>
                 {historyList.length > 0 && (
@@ -799,7 +799,7 @@ const Library = () => {
                         loadHistory();
                       }
                     }}
-                    className={dangerOutlineBtnClass}
+                    className={`inline-flex items-center gap-2 ${contentCtaPrimary}`}
                   >
                     <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
                     Hapus Semua
@@ -855,7 +855,7 @@ const Library = () => {
                               onClick={(e) => e.stopPropagation()}
                               compact
                               className="mb-1"
-                              label={`Lanjut baca: Chapter ${item.chapterNumber || item.chapterTitle || "terakhir"}`}
+                              label={`Lanjut nonton: Episode ${item.chapterNumber || item.chapterTitle || "terakhir"}`}
                             />
                           ) : null}
                           <p className="text-xs text-gray-500 dark:text-gray-500">
