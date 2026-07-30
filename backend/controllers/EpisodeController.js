@@ -141,8 +141,9 @@ const listByAnime = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { anime_id, title, episode_number, requires_login } = req.body;
-    if (!anime_id || !title || !episode_number) {
+    const { anime_id, title, episode_number, chapter_number, requires_login, scheduled_release_at, release_mode } = req.body;
+    const epNum = episode_number || chapter_number;
+    if (!anime_id || !title || !epNum) {
       return res.status(400).json({ error: 'anime_id, title and episode_number are required' });
     }
 
@@ -152,13 +153,31 @@ const create = async (req, res) => {
     }
 
     const animeSlug = animeRows[0].slug;
-    const slug = `${animeSlug}-episode-${episode_number}`;
+    const slug = `${animeSlug}-episode-${epNum}`;
 
     const reqLoginVal = requires_login === true || requires_login === 1 || requires_login === '1' || requires_login === 'true' ? 1 : 0;
 
+    let scheduledReleaseVal = null;
+    if (release_mode === 'scheduled' && scheduled_release_at) {
+      const dtStr = String(scheduled_release_at).replace('T', ' ').trim();
+      if (dtStr) {
+        scheduledReleaseVal = dtStr.length === 16 ? `${dtStr}:00` : dtStr;
+      }
+    } else if (scheduled_release_at && release_mode !== 'immediate') {
+      const dtStr = String(scheduled_release_at).replace('T', ' ').trim();
+      if (dtStr) {
+        scheduledReleaseVal = dtStr.length === 16 ? `${dtStr}:00` : dtStr;
+      }
+    }
+
+    let coverUrl = null;
+    if (req.file) {
+      coverUrl = `/uploads/${req.file.filename}`;
+    }
+
     const [result] = await db.execute(
-      'INSERT INTO episodes (anime_id, title, slug, episode_number, requires_login, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
-      [anime_id, title, slug, episode_number, reqLoginVal]
+      'INSERT INTO episodes (anime_id, title, slug, episode_number, cover, requires_login, scheduled_release_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+      [anime_id, title, slug, epNum, coverUrl, reqLoginVal, scheduledReleaseVal]
     );
 
     res.status(201).json({ message: 'Episode created successfully', id: result.insertId, slug });
@@ -171,7 +190,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, episode_number, requires_login } = req.body;
+    const { title, episode_number, chapter_number, requires_login, scheduled_release_at, release_mode } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM episodes WHERE id = ?', [id]);
     if (existing.length === 0) {
@@ -179,12 +198,13 @@ const update = async (req, res) => {
     }
 
     const current = existing[0];
+    const epNum = episode_number || chapter_number || current.episode_number;
     let slug = current.slug;
 
-    if (episode_number && episode_number !== current.episode_number) {
+    if (epNum && epNum !== current.episode_number) {
       const [animeRows] = await db.execute('SELECT slug FROM anime WHERE id = ?', [current.anime_id]);
       if (animeRows.length > 0) {
-        slug = `${animeRows[0].slug}-episode-${episode_number}`;
+        slug = `${animeRows[0].slug}-episode-${epNum}`;
       }
     }
 
@@ -192,9 +212,26 @@ const update = async (req, res) => {
       ? (requires_login === true || requires_login === 1 || requires_login === '1' || requires_login === 'true' ? 1 : 0) 
       : current.requires_login;
 
+    let scheduledReleaseVal = current.scheduled_release_at;
+    if (release_mode === 'immediate') {
+      scheduledReleaseVal = null;
+    } else if (release_mode === 'scheduled' || scheduled_release_at !== undefined) {
+      if (scheduled_release_at && String(scheduled_release_at).trim()) {
+        const dtStr = String(scheduled_release_at).replace('T', ' ').trim();
+        scheduledReleaseVal = dtStr.length === 16 ? `${dtStr}:00` : dtStr;
+      } else {
+        scheduledReleaseVal = null;
+      }
+    }
+
+    let coverUrl = current.cover;
+    if (req.file) {
+      coverUrl = `/uploads/${req.file.filename}`;
+    }
+
     await db.execute(
-      'UPDATE episodes SET title = ?, episode_number = ?, slug = ?, requires_login = ?, updated_at = NOW() WHERE id = ?',
-      [title || current.title, episode_number || current.episode_number, slug, reqLoginVal, id]
+      'UPDATE episodes SET title = ?, episode_number = ?, slug = ?, cover = ?, requires_login = ?, scheduled_release_at = ?, updated_at = NOW() WHERE id = ?',
+      [title || current.title, epNum, slug, coverUrl, reqLoginVal, scheduledReleaseVal, id]
     );
 
     res.json({ message: 'Episode updated successfully', slug });

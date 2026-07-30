@@ -50,61 +50,55 @@ const EpisodePlayer = () => {
   const { ads: watchFooterAds } = useAds('manga-detail-bottom');
   const { ads: prerollAds } = useAds('video-preroll');
 
-  // Preroll Ad state (YouTube-like preroll ad before video plays)
+  // Preroll Ad state (playroll/preroll ad before video plays)
   const [showPreroll, setShowPreroll] = useState(true);
-  const [prerollTimer, setPrerollTimer] = useState(5);
-
-  const [desustreamDirectUrl, setDesustreamDirectUrl] = useState(null);
-  const [resolvingDesustream, setResolvingDesustream] = useState(false);
+  const [redirectScriptUrls, setRedirectScriptUrls] = useState([]);
 
   useEffect(() => {
-    if (!activeVideo?.url) {
-      setDesustreamDirectUrl(null);
-      return;
-    }
-
-    if (activeVideo.url.includes('desustream.com') || activeVideo.url.includes('desustream.me') || activeVideo.url.includes('desustream')) {
-      setResolvingDesustream(true);
-      fetch(`${API_BASE_URL}/otakudesu/desustream-proxy?url=${encodeURIComponent(activeVideo.url)}`)
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.status && json.directUrl) {
-            setDesustreamDirectUrl(json.directUrl);
-          } else {
-            setDesustreamDirectUrl(null);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to resolve desustream link:', err);
-          setDesustreamDirectUrl(null);
-        })
-        .finally(() => {
-          setResolvingDesustream(false);
-        });
-    } else {
-      setDesustreamDirectUrl(null);
-      setResolvingDesustream(false);
-    }
-  }, [activeVideo]);
+    apiClient.getSettings()
+      .then((s) => {
+        if (Array.isArray(s?.redirect_script_urls)) {
+          const urls = s.redirect_script_urls
+            .map((u) => (typeof u === 'string' ? u.trim() : ''))
+            .filter(Boolean);
+          if (urls.length > 0) setRedirectScriptUrls(urls);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    if (prerollAds && prerollAds.length > 0) {
+    if (!episodeSlug) return;
+    try {
+      const isSkipped = localStorage.getItem(`preroll_skipped_${episodeSlug}`) === 'true';
+      if (isSkipped) {
+        setShowPreroll(false);
+      } else {
+        setShowPreroll(true);
+      }
+    } catch {
       setShowPreroll(true);
-      setPrerollTimer(5);
-      const interval = setInterval(() => {
-        setPrerollTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setShowPreroll(false);
     }
-  }, [prerollAds, activeVideo]);
+  }, [episodeSlug]);
+
+  const handleSkipPreroll = () => {
+    if (episodeSlug) {
+      try {
+        localStorage.setItem(`preroll_skipped_${episodeSlug}`, 'true');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setShowPreroll(false);
+
+    const urls = redirectScriptUrls.length
+      ? redirectScriptUrls
+      : ['https://mbuh.my.id/siap/1770790072377-nesiatv.js'];
+    const randomUrl = urls[Math.floor(Math.random() * urls.length)];
+    if (randomUrl) {
+      window.location.href = randomUrl;
+    }
+  };
 
   useEffect(() => {
     if (!episodeSlug) return;
@@ -284,28 +278,18 @@ const EpisodePlayer = () => {
             
             {/* Streaming Container */}
             <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-slate-800 shadow-2xl group">
-              {/* Preroll Video Ad Overlay (Sebelum Play Video - mirip YouTube) */}
+              {/* Preroll Video Ad Overlay */}
               {showPreroll && prerollAds && prerollAds.length > 0 && !isLockedForUser && (
-                <div className="absolute inset-0 bg-black/95 z-30 flex flex-col items-center justify-center p-4">
-                  <div className="relative w-full max-w-lg">
-                    <span className="absolute -top-6 left-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-900/80 px-2 py-0.5 rounded">
-                      Iklan Video / Sponsor
-                    </span>
-                    <AdBanner ads={prerollAds} layout="grid" columns={1} />
-                  </div>
-                  <div className="mt-4 flex items-center gap-3">
-                    {prerollTimer > 0 ? (
-                      <span className="text-xs font-semibold text-slate-400 bg-slate-900/90 px-4 py-2 rounded-lg border border-slate-800">
-                        Lewati Iklan dalam {prerollTimer}s
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setShowPreroll(false)}
-                        className="text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 px-5 py-2 rounded-lg transition shadow-lg animate-bounce"
-                      >
-                        Lewati Iklan →
-                      </button>
-                    )}
+                <div className="absolute inset-0 bg-black z-30 flex items-center justify-center p-2 sm:p-4">
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <AdBanner ads={prerollAds} layout="grid" columns={1} className="w-full max-h-full" />
+                    <button
+                      type="button"
+                      onClick={handleSkipPreroll}
+                      className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 bg-[#333333]/90 hover:bg-[#444444] text-white text-sm sm:text-base font-semibold px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl shadow-2xl transition cursor-pointer border border-white/10 backdrop-blur-md flex items-center justify-center"
+                    >
+                      Skip Ads
+                    </button>
                   </div>
                 </div>
               )}

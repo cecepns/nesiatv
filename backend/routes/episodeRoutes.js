@@ -10,9 +10,10 @@ router.get('/anime/:animeId', EpisodeController.listByAnime);
 router.get('/slug/:slug', optionalAuthenticate, EpisodeController.showBySlug);
 
 // Episode CRUD for admin
-router.post('/', authenticateToken, EpisodeController.create);
+router.post('/', authenticateToken, upload.single('cover'), EpisodeController.create);
 router.put('/batch-login', authenticateToken, EpisodeController.batchToggleLogin);
-router.put('/:id', authenticateToken, EpisodeController.update);
+router.put('/:id', authenticateToken, upload.single('cover'), EpisodeController.update);
+router.post('/:id', authenticateToken, upload.single('cover'), EpisodeController.update);
 router.delete('/:id', authenticateToken, EpisodeController.destroy);
 
 

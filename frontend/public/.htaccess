@@ -1,36 +1,43 @@
-# .htaccess for KomikNesia
-# Apache configuration for SPA and sitemap redirects
+# .htaccess for Nesiatv (Vite / React SPA)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
 
-# Enable RewriteEngine
-RewriteEngine On
+    # Redirect HTTP to HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Redirect sitemap requests to API
-RewriteRule ^sitemap\.xml$ https://api-be.komiknesia.my.id/sitemap.xml [R=301,L]
-RewriteRule ^sitemap-index\.xml$ https://api-be.komiknesia.my.id/sitemap-index.xml [R=301,L]
-RewriteRule ^sitemap-manga\.xml$ https://api-be.komiknesia.my.id/sitemap-manga.xml [R=301,L]
-RewriteRule ^sitemap-chapters\.xml$ https://api-be.komiknesia.my.id/sitemap-chapters.xml [R=301,L]
+    # Redirect sitemap requests to Backend API
+    RewriteRule ^sitemap\.xml$ https://api-be.nesiatv.my.id/sitemap.xml [R=301,L]
+    RewriteRule ^sitemap-index\.xml$ https://api-be.nesiatv.my.id/sitemap-index.xml [R=301,L]
+    RewriteRule ^sitemap-manga\.xml$ https://api-be.nesiatv.my.id/sitemap-manga.xml [R=301,L]
+    RewriteRule ^sitemap-chapters\.xml$ https://api-be.nesiatv.my.id/sitemap-chapters.xml [R=301,L]
 
-# Handle React Router (SPA)
-# If the requested file or directory doesn't exist, serve index.html
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
+    # React Router SPA Handling (Fallthrough to index.html for non-file/dir paths)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.html [L]
+</IfModule>
 
-# Security headers
+# Security Headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# Enable GZIP compression
+# GZIP / Deflate Compression
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/x-javascript application/json image/svg+xml
 </IfModule>
 
-# Cache static assets
+# Cache Static Assets
 <IfModule mod_expires.c>
     ExpiresActive On
+    ExpiresDefault "access plus 1 month"
     ExpiresByType image/jpg "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
     ExpiresByType image/png "access plus 1 year"
@@ -39,4 +46,5 @@ RewriteRule . /index.html [L]
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-javascript "access plus 1 month"
 </IfModule>
