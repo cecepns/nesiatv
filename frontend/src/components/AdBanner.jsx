@@ -8,7 +8,7 @@ import LazyImage from './LazyImage';
  * @param {string} layout - Layout type: 'grid' or 'carousel'
  * @param {number} columns - Number of columns for grid layout
  */
-const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
+const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1, loop = true, onVideoEnded }) => {
   if (!ads || ads.length === 0) {
     return null;
   }
@@ -40,9 +40,10 @@ const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
                 <video
                   src={getImageUrl(ad.image)}
                   autoPlay
-                  loop
+                  loop={loop}
                   muted
                   playsInline
+                  onEnded={() => onVideoEnded && onVideoEnded(ad)}
                   className="rounded-lg shadow-md max-h-60 object-cover"
                 />
               ) : (
@@ -89,9 +90,10 @@ const AdBanner = ({ ads, className = '', layout = 'grid', columns = 1 }) => {
               <video
                 src={getImageUrl(ad.image)}
                 autoPlay
-                loop
+                loop={loop}
                 muted
                 playsInline
+                onEnded={() => onVideoEnded && onVideoEnded(ad)}
                 className="w-full rounded-lg shadow-md object-cover"
               />
             ) : (

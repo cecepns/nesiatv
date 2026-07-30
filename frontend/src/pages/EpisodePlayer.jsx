@@ -81,6 +81,17 @@ const EpisodePlayer = () => {
     }
   }, [episodeSlug]);
 
+  const handlePrerollEnded = () => {
+    if (episodeSlug) {
+      try {
+        localStorage.setItem(`preroll_skipped_${episodeSlug}`, 'true');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setShowPreroll(false);
+  };
+
   const handleSkipPreroll = () => {
     if (episodeSlug) {
       try {
@@ -281,7 +292,14 @@ const EpisodePlayer = () => {
               {showPreroll && prerollAds && prerollAds.length > 0 && !isLockedForUser && (
                 <div className="absolute inset-0 bg-black z-30 flex items-center justify-center p-2 sm:p-4">
                   <div className="relative w-full h-full flex items-center justify-center">
-                    <AdBanner ads={prerollAds} layout="grid" columns={1} className="w-full max-h-full" />
+                    <AdBanner
+                      ads={prerollAds}
+                      layout="grid"
+                      columns={1}
+                      className="w-full max-h-full"
+                      loop={false}
+                      onVideoEnded={handlePrerollEnded}
+                    />
                     <button
                       type="button"
                       onClick={handleSkipPreroll}
