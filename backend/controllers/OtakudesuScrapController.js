@@ -16,6 +16,7 @@ async function fetchHtml(url) {
     const response = await axios.get(url, {
       headers: DEFAULT_HEADERS,
       timeout: 15000,
+      maxRedirects: 5,
     });
     return cheerio.load(response.data);
   } catch (error) {
@@ -111,14 +112,16 @@ const getOtakudesuSchedule = async (req, res) => {
 
 // Scrape Detail and Episodes
 const scrapeAnimeDetail = async (req, res) => {
-  const { url } = req.body; // target detail url e.g. https://otakudesu.blog/anime/jigoku-sensei-2025-sub-indo/
+  let { url } = req.body; // target detail url or slug
   if (!url) {
     return res.status(400).json({ status: false, message: 'URL is required' });
   }
 
   try {
-    const $ = await fetchHtml(url);
-    const slug = url.split('/').filter(Boolean).pop();
+    const slug = url.trim().split('/').filter(Boolean).pop();
+    const targetUrl = `${BASE_URL}/anime/${slug}/`;
+
+    const $ = await fetchHtml(targetUrl);
 
     const title = $('.infozingle p, .infozin p').find('span:contains("Judul")').parent().text().replace('Judul:', '').trim() || $('.fotoanime h1').text().trim() || $('h1.post-title').text().trim();
     const japaneseName = $('.infozingle p, .infozin p').find('span:contains("Japanese")').parent().text().replace('Japanese:', '').trim();
@@ -272,13 +275,16 @@ const querystring = require('querystring');
 
 // Scrape Single Episode Stream Links
 const scrapeEpisodeVideoSources = async (req, res) => {
-  const { url, episodeId } = req.body; // e.g. https://otakudesu.blog/episode/jsn25-episode-1-2-sub-indo/
+  let { url, episodeId } = req.body; // e.g. https://otakudesu.blog/episode/jsn25-episode-1-2-sub-indo/
   if (!url || !episodeId) {
     return res.status(400).json({ status: false, message: 'URL and episodeId are required' });
   }
 
   try {
-    const $ = await fetchHtml(url);
+    const slug = url.trim().split('/').filter(Boolean).pop();
+    const targetUrl = `${BASE_URL}/episode/${slug}/`;
+
+    const $ = await fetchHtml(targetUrl);
     const videoSources = [];
 
     // 1. Check for primary iframe embedded player
