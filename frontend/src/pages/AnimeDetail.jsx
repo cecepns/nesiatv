@@ -26,6 +26,19 @@ const AnimeDetail = () => {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [reactionCounts, setReactionCounts] = useState(emptyReactionCounts);
   const [userReaction, setUserReaction] = useState(null);
+  const [siteSettings, setSiteSettings] = useState({
+    discord_url: 'https://discord.gg/dgC22PSm9h',
+    donate_url: 'https://trakteer.id/Nesiatv.id',
+  });
+
+  useEffect(() => {
+    apiClient.getSettings().then((s) => {
+      setSiteSettings({
+        discord_url: s?.discord_url || 'https://discord.gg/dgC22PSm9h',
+        donate_url: s?.donate_url || 'https://trakteer.id/Nesiatv.id',
+      });
+    }).catch(() => {});
+  }, []);
 
   // Fetch Ads for Sinopsis Page
   const { ads: sinopsisHeaderAds } = useAds('chapter-top');
@@ -451,7 +464,7 @@ const AnimeDetail = () => {
           </button>
 
           <a
-            href="https://discord.gg/dgC22PSm9h"
+            href={siteSettings.discord_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-[#131622] p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-[#181c2b]"
@@ -467,7 +480,7 @@ const AnimeDetail = () => {
           </a>
 
           <a
-            href="https://trakteer.id/Nesiatv.id"
+            href={siteSettings.donate_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-[#131622] p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-[#181c2b]"

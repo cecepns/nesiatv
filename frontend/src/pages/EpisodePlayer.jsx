@@ -54,6 +54,10 @@ const EpisodePlayer = () => {
   // Preroll Ad state (playroll/preroll ad before video plays)
   const [showPreroll, setShowPreroll] = useState(true);
   const [redirectScriptUrls, setRedirectScriptUrls] = useState([]);
+  const [siteSettings, setSiteSettings] = useState({
+    discord_url: 'https://discord.gg/dgC22PSm9h',
+    donate_url: 'https://trakteer.id/Nesiatv.id',
+  });
 
   useEffect(() => {
     apiClient.getSettings()
@@ -64,6 +68,10 @@ const EpisodePlayer = () => {
             .filter(Boolean);
           if (urls.length > 0) setRedirectScriptUrls(urls);
         }
+        setSiteSettings({
+          discord_url: s?.discord_url || 'https://discord.gg/dgC22PSm9h',
+          donate_url: s?.donate_url || 'https://trakteer.id/Nesiatv.id',
+        });
       })
       .catch(() => {});
   }, []);
@@ -524,7 +532,7 @@ const EpisodePlayer = () => {
                   Bagikan Video
                 </button>
                 <a
-                  href="https://discord.gg/dgC22PSm9h"
+                  href={siteSettings.discord_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-rose-600/10 hover:bg-rose-600/20 border border-rose-500/20 text-rose-400 px-4 py-2 rounded-lg text-xs font-bold transition"
@@ -553,7 +561,7 @@ const EpisodePlayer = () => {
               </button>
 
               <a
-                href="https://discord.gg/dgC22PSm9h"
+                href={siteSettings.discord_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-slate-900 p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-slate-800/80"
@@ -569,7 +577,7 @@ const EpisodePlayer = () => {
               </a>
 
               <a
-                href="https://trakteer.id/Nesiatv.id"
+                href={siteSettings.donate_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex w-full items-center gap-4 rounded-2xl border border-slate-800/80 bg-slate-900 p-4 text-left shadow-md transition-all hover:border-slate-700 hover:bg-slate-800/80"

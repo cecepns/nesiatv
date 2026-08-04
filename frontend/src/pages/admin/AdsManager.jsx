@@ -24,6 +24,14 @@ const AdsManager = () => {
     popup_ads_unlock_seconds: 10,
     redirect_script_urls: [],
     cdn_domain: 'https://cdn.nesiatv.net',
+    discord_url: 'https://discord.gg/dgC22PSm9h',
+    donate_url: 'https://trakteer.id/Nesiatv.id',
+    komik_id_url: 'https://v1.komiknesiaku.com/',
+    komik_alt_url: 'https://id.nusakomik.com/',
+    baca_manga_url: 'https://v1.nesiatv.com/',
+    premium_url: 'https://v1.nesiatv.com/premium',
+    site_title: 'NesiaTV - Nonton Anime, Donghua & Film Subtitle Indonesia',
+    meta_description: 'NesiaTV adalah platform streaming untuk menonton anime, donghua, film, dan serial terbaru dengan subtitle Indonesia. Nikmati tayangan berkualitas HD, update setiap hari, dan koleksi lengkap hanya di NesiaTV.',
   });
   const [settingsLoading, setSettingsLoading] = useState(false);
 
@@ -227,6 +235,12 @@ const AdsManager = () => {
           popup_ads_unlock_seconds: value?.popup_ads_unlock_seconds ?? 10,
           redirect_script_urls: urls,
           cdn_domain: value?.cdn_domain ?? 'https://cdn.nesiatv.net',
+          discord_url: value?.discord_url ?? 'https://discord.gg/dgC22PSm9h',
+          donate_url: value?.donate_url ?? 'https://trakteer.id/Nesiatv.id',
+          komik_id_url: value?.komik_id_url ?? 'https://komiknesia.id/',
+          komik_alt_url: value?.komik_alt_url ?? 'https://nusakomik.id/',
+          baca_manga_url: value?.baca_manga_url ?? 'https://v1.nesiatvku.com/',
+          premium_url: value?.premium_url ?? 'https://v1.nesiatvku.com/premium',
         });
       })
       .catch(() => {});
@@ -403,6 +417,12 @@ const AdsManager = () => {
           .map((url) => (typeof url === 'string' ? url.trim() : ''))
           .filter(Boolean),
         cdn_domain: (settings.cdn_domain || '').trim(),
+        discord_url: (settings.discord_url || '').trim(),
+        donate_url: (settings.donate_url || '').trim(),
+        komik_id_url: (settings.komik_id_url || '').trim(),
+        komik_alt_url: (settings.komik_alt_url || '').trim(),
+        baca_manga_url: (settings.baca_manga_url || '').trim(),
+        premium_url: (settings.premium_url || '').trim(),
       };
       await apiClient.updateSettings(payload);
       alert('Pengaturan berhasil disimpan.');
@@ -679,6 +699,117 @@ const AdsManager = () => {
               Tambah Script URL
             </button>
           </div>
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h5 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">
+              Pengaturan Link Card (Home, AnimeDetail, EpisodePlayer, Landing)
+            </h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Discord
+                </label>
+                <input
+                  type="text"
+                  value={settings.discord_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, discord_url: e.target.value }))}
+                  placeholder="https://discord.gg/..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Donasi (Trakteer / Lainnya)
+                </label>
+                <input
+                  type="text"
+                  value={settings.donate_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, donate_url: e.target.value }))}
+                  placeholder="https://trakteer.id/..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Baca Komik ID
+                </label>
+                <input
+                  type="text"
+                  value={settings.komik_id_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, komik_id_url: e.target.value }))}
+                  placeholder="https://komiknesia.id/"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Baca Komik Alternatif
+                </label>
+                <input
+                  type="text"
+                  value={settings.komik_alt_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, komik_alt_url: e.target.value }))}
+                  placeholder="https://nusakomik.id/"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Baca Manga (Landing CTA)
+                </label>
+                <input
+                  type="text"
+                  value={settings.baca_manga_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, baca_manga_url: e.target.value }))}
+                  placeholder="https://v1.nesiatvku.com/"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Link Premium (Landing CTA)
+                </label>
+                <input
+                  type="text"
+                  value={settings.premium_url || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, premium_url: e.target.value }))}
+                  placeholder="https://v1.nesiatv.com/premium"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Judul Website (SEO Title)
+                </label>
+                <input
+                  type="text"
+                  value={settings.site_title || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, site_title: e.target.value }))}
+                  placeholder="NesiaTV - Nonton Anime, Donghua & Film Subtitle Indonesia"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Deskripsi Website (SEO Meta Description)
+                </label>
+                <textarea
+                  rows={2}
+                  value={settings.meta_description || ''}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, meta_description: e.target.value }))}
+                  placeholder="NesiaTV adalah platform streaming..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={handleSaveSettings}

@@ -583,6 +583,10 @@ class APIClient {
     });
   }
 
+  getOtakudesuSchedule() {
+    return this.request('/otakudesu/schedule');
+  }
+
   // Otakudesu Scraper
   getOtakudesuList() {
     return this.request('/otakudesu/list');

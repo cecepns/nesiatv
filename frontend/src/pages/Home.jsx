@@ -84,8 +84,15 @@ const Home = () => {
   const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://nesiatv.com";
   const shareTitle =
     "Baca anime, manga, manhwa, dan manhua Bahasa Indonesia di Nesiatv!";
-  const discordInviteUrl = "https://discord.gg/dgC22PSm9h";
-  const donateUrl = "https://trakteer.id/Nesiatv.id";
+
+  const [siteSettings, setSiteSettings] = useState({
+    discord_url: 'https://discord.gg/dgC22PSm9h',
+    donate_url: 'https://trakteer.id/Nesiatv.id',
+    komik_id_url: 'https://v1.komiknesiaku.com/',
+    komik_alt_url: 'https://id.nusakomik.com/',
+    site_title: 'NesiaTV - Nonton Anime, Donghua & Film Subtitle Indonesia',
+    meta_description: 'NesiaTV adalah platform streaming untuk menonton anime, donghua, film, dan serial terbaru dengan subtitle Indonesia. Nikmati tayangan berkualitas HD, update setiap hari, dan koleksi lengkap hanya di NesiaTV.',
+  });
 
   const copyShareLink = async (context = "default") => {
     try {
@@ -130,6 +137,14 @@ const Home = () => {
         if (Number.isFinite(v) && [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].includes(v)) {
           setHomePopupIntervalMinutes(v);
         }
+        setSiteSettings({
+          discord_url: s?.discord_url || 'https://discord.gg/dgC22PSm9h',
+          donate_url: s?.donate_url || 'https://trakteer.id/Nesiatv.id',
+          komik_id_url: s?.komik_id_url || 'https://v1.komiknesiaku.com/',
+          komik_alt_url: s?.komik_alt_url || 'https://id.nusakomik.com/',
+          site_title: s?.site_title || 'NesiaTV - Nonton Anime, Donghua & Film Subtitle Indonesia',
+          meta_description: s?.meta_description || 'NesiaTV adalah platform streaming untuk menonton anime, donghua, film, dan serial terbaru dengan subtitle Indonesia. Nikmati tayangan berkualitas HD, update setiap hari, dan koleksi lengkap hanya di NesiaTV.',
+        });
       })
       .catch(() => {})
       .finally(() => setPopupSettingsReady(true));
@@ -158,11 +173,13 @@ const Home = () => {
       }
 
       const lastShown = parseInt(lastShownRaw, 10);
-      if (Number.isNaN(lastShown) || Date.now() - lastShown >= intervalMs) {
+      const now = Date.now();
+
+      if (isNaN(lastShown) || now - lastShown >= intervalMs) {
         setPopupBannerVisible(true);
       }
     } catch (error) {
-      console.error("Error reading home popup timestamp:", error);
+      console.error("Error checking home popup timestamp:", error);
       setPopupBannerVisible(true);
     }
   }, [popupSettingsReady, homePopupIntervalMinutes]);
@@ -191,8 +208,8 @@ const Home = () => {
   return (
     <div className="pt-5 md:pt-20 pb-4">
       <Helmet>
-        <title>Nesiatv | Nonton Anime, Manga, Manhwa, dan Manhua Bahasa Indonesia</title>
-        <meta name="description" content="Baca anime, manga, manhwa, dan manhua bahasa Indonesia gratis di Nesiatv. Update terbaru, kualitas terbaik, dan mudah dibaca di semua perangkat." />
+        <title>{siteSettings.site_title}</title>
+        <meta name="description" content={siteSettings.meta_description} />
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Home Top Ads - 6 ads */}
@@ -254,7 +271,7 @@ const Home = () => {
         >
 
           <a
-            href="https://komiknesia.id/"
+            href={siteSettings.komik_id_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
@@ -270,7 +287,7 @@ const Home = () => {
           </a>
 
           <a
-            href="https://nusakomik.id/"
+            href={siteSettings.komik_alt_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
@@ -286,7 +303,7 @@ const Home = () => {
           </a>
 
           <a
-            href={discordInviteUrl}
+            href={siteSettings.discord_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"
@@ -302,7 +319,7 @@ const Home = () => {
           </a>
 
           <a
-            href={donateUrl}
+            href={siteSettings.donate_url}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex w-full items-center gap-4 rounded-2xl border border-slate-700/90 bg-[#111827] p-4 text-left shadow-md transition-all hover:border-slate-600 hover:bg-slate-800/95 md:p-5"

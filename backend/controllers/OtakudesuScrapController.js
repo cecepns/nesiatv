@@ -74,6 +74,41 @@ const getAnimeList = async (req, res) => {
   }
 };
 
+// Scrape Release Schedule (Jadwal Rilis)
+const getOtakudesuSchedule = async (req, res) => {
+  try {
+    const $ = await fetchHtml(`${BASE_URL}/jadwal-rilis/`);
+    const schedule = [];
+
+    $('.kglist321').each((_, el) => {
+      const day = $(el).find('h2').text().trim();
+      const animeList = [];
+      $(el).find('ul li a').each((_, a) => {
+        const title = $(a).text().trim();
+        const href = $(a).attr('href') || '';
+        const slug = href.split('/').filter(Boolean).pop() || '';
+        if (title) {
+          animeList.push({ title, url: href, slug });
+        }
+      });
+      if (day) {
+        schedule.push({ day, items: animeList });
+      }
+    });
+
+    return res.json({
+      status: true,
+      data: schedule,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to fetch schedule from Otakudesu',
+      error: error.message,
+    });
+  }
+};
+
 // Scrape Detail and Episodes
 const scrapeAnimeDetail = async (req, res) => {
   const { url } = req.body; // target detail url e.g. https://otakudesu.blog/anime/jigoku-sensei-2025-sub-indo/
@@ -519,6 +554,7 @@ const streamVideoProxy = async (req, res) => {
 };
 
 module.exports = {
+  getOtakudesuSchedule,
   getAnimeList,
   scrapeAnimeDetail,
   scrapeEpisodeVideoSources,

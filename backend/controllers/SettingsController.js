@@ -20,11 +20,22 @@ const parseAllowedInt = (raw, allowed, fallback) => {
   return Number.isFinite(v) && allowed.includes(v) ? v : fallback;
 };
 
+const DEFAULT_CUSTOM_LINKS = {
+  discord_url: 'https://discord.gg/dgC22PSm9h',
+  donate_url: 'https://trakteer.id/Nesiatv.id',
+  komik_id_url: 'https://v1.komiknesiaku.com/',
+  komik_alt_url: 'https://id.nusakomik.com/',
+  baca_manga_url: 'https://v1.nesiatv.com/',
+  premium_url: 'https://v1.nesiatv.com/premium',
+  site_title: 'NesiaTV - Nonton Anime, Donghua & Film Subtitle Indonesia',
+  meta_description: 'NesiaTV adalah platform streaming untuk menonton anime, donghua, film, dan serial terbaru dengan subtitle Indonesia. Nikmati tayangan berkualitas HD, update setiap hari, dan koleksi lengkap hanya di NesiaTV.',
+};
+
 const show = async (req, res) => {
   try {
     const payload = await settingsPublicCache.wrap('public', async () => {
       const [rows] = await db.execute(
-        "SELECT `key`, `value` FROM settings WHERE `key` IN ('popup_ads_interval_minutes', 'home_popup_interval_minutes', 'popup_ads_initial_delay_minutes', 'popup_ads_unlock_seconds', 'redirect_script_urls', 'cdn_domain')"
+        "SELECT `key`, `value` FROM settings WHERE `key` IN ('popup_ads_interval_minutes', 'home_popup_interval_minutes', 'popup_ads_initial_delay_minutes', 'popup_ads_unlock_seconds', 'redirect_script_urls', 'cdn_domain', 'discord_url', 'donate_url', 'komik_id_url', 'komik_alt_url', 'baca_manga_url', 'premium_url', 'site_title', 'meta_description')"
       );
       const map = Object.fromEntries((rows || []).map((r) => [r.key, r.value]));
       const popupAds = parseInt(map.popup_ads_interval_minutes, 10);
@@ -60,6 +71,14 @@ const show = async (req, res) => {
         ),
         redirect_script_urls: redirectScriptUrls,
         cdn_domain: map.cdn_domain || 'https://cdn.nesiatv.net',
+        discord_url: map.discord_url || DEFAULT_CUSTOM_LINKS.discord_url,
+        donate_url: map.donate_url || DEFAULT_CUSTOM_LINKS.donate_url,
+        komik_id_url: map.komik_id_url || DEFAULT_CUSTOM_LINKS.komik_id_url,
+        komik_alt_url: map.komik_alt_url || DEFAULT_CUSTOM_LINKS.komik_alt_url,
+        baca_manga_url: map.baca_manga_url || DEFAULT_CUSTOM_LINKS.baca_manga_url,
+        premium_url: map.premium_url || DEFAULT_CUSTOM_LINKS.premium_url,
+        site_title: map.site_title || DEFAULT_CUSTOM_LINKS.site_title,
+        meta_description: map.meta_description || DEFAULT_CUSTOM_LINKS.meta_description,
       };
     });
     res.json(payload);
@@ -71,6 +90,7 @@ const show = async (req, res) => {
       popup_ads_initial_delay_minutes: 5,
       popup_ads_unlock_seconds: 10,
       redirect_script_urls: DEFAULT_REDIRECT_SCRIPT_URLS,
+      ...DEFAULT_CUSTOM_LINKS,
     });
   }
 };
@@ -131,6 +151,26 @@ const update = async (req, res) => {
       );
       const { refreshCdnDomain } = require('../utils/s3Upload');
       await refreshCdnDomain().catch(() => { });
+    }
+
+    const linkKeys = [
+      'discord_url',
+      'donate_url',
+      'komik_id_url',
+      'komik_alt_url',
+      'baca_manga_url',
+      'premium_url',
+      'site_title',
+      'meta_description',
+    ];
+    for (const key of linkKeys) {
+      if (req.body[key] !== undefined) {
+        const val = String(req.body[key]).trim();
+        await db.execute(
+          'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?',
+          [key, val, val]
+        );
+      }
     }
 
     settingsPublicCache.invalidate();
