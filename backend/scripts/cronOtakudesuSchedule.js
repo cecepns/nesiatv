@@ -36,16 +36,18 @@ function delay(ms) {
 async function scrapeAnimeDetailByUrl(url) {
   if (!url) return null;
 
-  let $;
-  try {
-    $ = await fetchHtml(url);
-  } catch (err) {
-    console.error(`[Cron Otakudesu] Failed fetching URL ${url}: ${err.message}`);
-    return null;
-  }
-
   const rawSlug = url.split('/').filter(Boolean).pop();
   if (!rawSlug) return null;
+
+  const targetUrl = `${BASE_URL}/anime/${rawSlug}/`;
+
+  let $;
+  try {
+    $ = await fetchHtml(targetUrl);
+  } catch (err) {
+    console.error(`[Cron Otakudesu] Failed fetching URL ${targetUrl}: ${err.message}`);
+    return null;
+  }
 
   const infoEl = $('.infozingle p, .infozin p');
 
@@ -231,7 +233,11 @@ async function scrapeAnimeDetailByUrl(url) {
 async function scrapeEpisodeStreamLinks(url, episodeId) {
   if (!url || !episodeId) return;
 
-  const $ = await fetchHtml(url);
+  const rawSlug = url.split('/').filter(Boolean).pop();
+  if (!rawSlug) return;
+  const targetUrl = `${BASE_URL}/episode/${rawSlug}/`;
+
+  const $ = await fetchHtml(targetUrl);
   const videoSources = [];
 
   // 1. Check primary iframe embed
