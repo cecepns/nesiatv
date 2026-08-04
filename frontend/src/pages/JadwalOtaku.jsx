@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { CalendarDays, ChevronLeft, ChevronRight, Tv } from 'lucide-react';
 import LiveChatWidget from '../components/LiveChatWidget';
@@ -27,8 +28,8 @@ const DAY_LABEL_MAP = {
 };
 
 function ScheduleItemCard({ item }) {
-  return (
-    <div className="group flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition hover:border-sky-400/60 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40">
+  const content = (
+    <div className="group flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition hover:border-sky-400/60 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-cyan-400/40 cursor-pointer">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-cyan-950/50 dark:text-cyan-300">
           <Tv className="h-5 w-5" />
@@ -39,6 +40,16 @@ function ScheduleItemCard({ item }) {
       </div>
     </div>
   );
+
+  if (item.slug) {
+    return (
+      <Link to={`/anime/${item.slug}`}>
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
 
 function DaySection({ dayLabel, items, isToday }) {

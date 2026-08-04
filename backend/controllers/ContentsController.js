@@ -34,10 +34,12 @@ const getContents = async (req, res) => {
       SELECT 
         a.id, a.title, a.slug, a.alternative_name, a.japanese_name, 
         a.thumbnail, a.cover_background, a.rating, a.views, a.status, 
-        a.content_type, a.updated_at, c.name as category_name, COUNT(DISTINCT v.id) as votes
+        a.content_type, a.updated_at, c.name as category_name, COUNT(DISTINCT v.id) as votes,
+        MAX(ep.created_at) as latest_ep_date
       FROM anime a
       LEFT JOIN categories c ON a.category_id = c.id
       LEFT JOIN votes v ON a.id = v.anime_id
+      LEFT JOIN episodes ep ON a.id = ep.anime_id
     `;
 
     const whereConditions = ['1=1'];
@@ -82,9 +84,8 @@ const getContents = async (req, res) => {
     query += ' WHERE ' + whereConditions.join(' AND ');
     query += ' GROUP BY a.id, c.name';
 
-
     // Order clause
-    let orderClause = ' ORDER BY a.updated_at DESC, a.id DESC';
+    let orderClause = ' ORDER BY COALESCE(MAX(ep.created_at), a.updated_at) DESC, a.id DESC';
     if (orderBy === 'Az') {
       orderClause = ' ORDER BY a.title ASC';
     } else if (orderBy === 'Za') {

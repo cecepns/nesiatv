@@ -19,7 +19,6 @@ import MbuhRedirectScript from "./components/MbuhRedirectScript";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
-import Landing from "./pages/Landing";
 import "react-toastify/dist/ReactToastify.css";
 
 function AppContent() {
@@ -35,10 +34,86 @@ function AppContent() {
     <>
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<Landing />} />
-
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requireAdmin>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/watch/:episodeSlug" element={<EpisodePlayer />} />
+        <Route path="/anime/:slug" element={<AnimeDetail />} />
+        <Route path="/profile/:username" element={<ProfileUser />} />
+        <Route
+          path="/library"
+          element={
+            <Layout>
+              <Library />
+            </Layout>
+          }
+        />
+        <Route
+          path="/jadwal"
+          element={
+            <Layout>
+              <JadwalOtaku />
+            </Layout>
+          }
+        />
+        <Route
+          path="/content"
+          element={
+            <Layout>
+              <Content />
+            </Layout>
+          }
+        />
+        <Route
+          path="/akun"
+          element={
+            <Layout>
+              <Akun />
+            </Layout>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <Layout>
+              <Leaderboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/premium"
+          element={
+            <Layout>
+              <Premium />
+            </Layout>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <Layout>
+              <Contact />
+            </Layout>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Home />
+            </Layout>
+          }
+        />
       </Routes>
-
+      {shouldShowAdPopup && <AdPopup />}
+      <MbuhRedirectScript />
+      <ToastContainer position="top-right" autoClose={2500} theme="colored" />
     </>
   );
 }
