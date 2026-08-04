@@ -3,7 +3,9 @@ const db = require('../db');
 const MAX_TITLE = 200;
 
 async function resolveMangaIds(body) {
-  const rawIds = Array.isArray(body.anime_ids) ? body.anime_ids : [];
+  const rawAnimeIds = Array.isArray(body.anime_ids) ? body.anime_ids : [];
+  const rawMangaIds = Array.isArray(body.manga_ids) ? body.manga_ids : [];
+  const rawIds = [...rawAnimeIds, ...rawMangaIds];
   const rawSlugs = Array.isArray(body.slugs) ? body.slugs : [];
   const ids = new Set();
 
@@ -32,7 +34,9 @@ const index = async (req, res) => {
     const userId = req.user.id;
     const [rows] = await db.execute(
       `SELECT r.id, r.title, r.created_at, r.updated_at,
-              COUNT(m.id) AS manga_count
+              COUNT(m.readlist_id) AS manga_count,
+              COUNT(m.readlist_id) AS items_count,
+              COUNT(m.readlist_id) AS total_items
        FROM user_readlists r
        LEFT JOIN user_readlist_manga m ON m.readlist_id = r.id
        WHERE r.user_id = ?

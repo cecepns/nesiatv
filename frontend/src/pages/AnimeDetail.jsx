@@ -56,6 +56,13 @@ const AnimeDetail = () => {
     }
   };
 
+  const [playlistModalOpen, setPlaylistModalOpen] = useState(false);
+  const [userPlaylists, setUserPlaylists] = useState([]);
+  const [userPlaylistsLoading, setUserPlaylistsLoading] = useState(false);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
+  const [newPlaylistTitle, setNewPlaylistTitle] = useState('');
+  const [showCreatePlaylistInput, setShowCreatePlaylistInput] = useState(false);
+
   const handlePlaylistClick = async () => {
     if (!isAuthenticated) {
       toast.warning('Silakan login terlebih dahulu untuk menyimpan ke playlist');
@@ -63,23 +70,62 @@ const AnimeDetail = () => {
       return;
     }
     if (!anime?.id) return;
+
+    setPlaylistModalOpen(true);
+    setUserPlaylistsLoading(true);
+    setShowCreatePlaylistInput(false);
+    setNewPlaylistTitle('');
+
+    try {
+      const res = await apiClient.getReadlists();
+      const lists = Array.isArray(res?.data) ? res.data : [];
+      setUserPlaylists(lists);
+      if (lists.length > 0) {
+        setSelectedPlaylistId(lists[0].id);
+      } else {
+        setSelectedPlaylistId('');
+        setShowCreatePlaylistInput(true);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal memuat daftar playlist');
+    } finally {
+      setUserPlaylistsLoading(false);
+    }
+  };
+
+  const handleConfirmAddToPlaylist = async (e) => {
+    e.preventDefault();
+    if (!anime?.id) return;
+
     try {
       setPlaylistLoading(true);
-      const res = await apiClient.getReadlists();
-      let lists = Array.isArray(res?.data) ? res.data : [];
-      let targetList = lists[0];
+      let targetId = selectedPlaylistId;
+      let targetTitle = '';
 
-      if (!targetList) {
-        const createRes = await apiClient.createReadlist({ title: 'Playlist Favorit Saya' });
-        targetList = createRes?.data;
-      }
-
-      if (targetList?.id) {
-        await apiClient.addReadlistItems(targetList.id, { manga_ids: [anime.id] });
-        toast.success(`Anime berhasil ditambahkan ke playlist "${targetList.title}"!`);
+      if (showCreatePlaylistInput || !targetId) {
+        if (!newPlaylistTitle.trim()) {
+          toast.warning('Masukkan nama playlist baru');
+          setPlaylistLoading(false);
+          return;
+        }
+        const createRes = await apiClient.createReadlist({ title: newPlaylistTitle.trim() });
+        if (createRes?.status && createRes?.data?.id) {
+          targetId = createRes.data.id;
+          targetTitle = createRes.data.title;
+        } else {
+          toast.error('Gagal membuat playlist baru');
+          setPlaylistLoading(false);
+          return;
+        }
       } else {
-        navigate('/library?tab=readlist');
+        const found = userPlaylists.find((p) => String(p.id) === String(targetId));
+        targetTitle = found?.title || 'Playlist';
       }
+
+      await apiClient.addReadlistItems(targetId, { manga_ids: [anime.id] });
+      toast.success(`Anime berhasil ditambahkan ke playlist "${targetTitle}"!`);
+      setPlaylistModalOpen(false);
     } catch (err) {
       console.error(err);
       toast.error('Gagal menambahkan ke playlist');
@@ -642,6 +688,130 @@ const AnimeDetail = () => {
         shareUrl={window.location.href}
         title={anime?.title ? `Nonton anime ${anime.title} Sub Indo gratis di Nesiatv!` : 'Nesiatv'}
       />
+
+      {/* Playlist Selector Modal */}
+      {playlistModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-[#131622] border border-slate-800/90 w-full max-w-md rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
+                  <ListPlus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Simpan ke Playlist</h3>
+                  <p className="text-xs text-slate-400">Pilih folder playlist tujuan</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlaylistModalOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {userPlaylistsLoading ? (
+              <div className="py-12 text-center text-slate-400 text-sm animate-pulse flex flex-col items-center gap-2">
+                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span>Memuat daftar playlist...</span>
+              </div>
+            ) : (
+              <form onSubmit={handleConfirmAddToPlaylist} className="space-y-4">
+                {!showCreatePlaylistInput && (
+                  <div className="space-y-3">
+                    {/* List Folder Playlist dengan Scroll */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                      {userPlaylists.map((p) => {
+                        const isSelected = String(selectedPlaylistId) === String(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setSelectedPlaylistId(p.id)}
+                            className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all duration-200 ${
+                              isSelected
+                                ? 'bg-indigo-600/15 border-indigo-500/80 text-white shadow-lg shadow-indigo-950/40'
+                                : 'bg-[#181c2b] border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-[#1f2438]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`p-2 rounded-xl border ${isSelected ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                                <Tag className="w-4 h-4" />
+                              </div>
+                              <div className="truncate">
+                                <p className="text-sm font-semibold truncate">{p.title}</p>
+                                <p className="text-[11px] text-slate-400">
+                                  {p.items_count ?? p.manga_count ?? p.total_items ?? 0} Anime tersimpan
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ml-3 ${isSelected ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-slate-700 bg-slate-900'}`}>
+                              {isSelected && <span className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCreatePlaylistInput(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-dashed border-indigo-500/40 bg-indigo-600/5 hover:bg-indigo-600/10 text-indigo-400 hover:text-indigo-300 font-semibold text-xs transition"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>+ Buat Playlist Baru</span>
+                    </button>
+                  </div>
+                )}
+
+                {showCreatePlaylistInput && (
+                  <div className="space-y-3 bg-[#181c2b] p-4 rounded-2xl border border-slate-800/80">
+                    <label className="text-xs font-semibold text-slate-300 block">Nama Playlist Baru</label>
+                    <input
+                      type="text"
+                      placeholder="Misal: Favorite 2026, Maraton..."
+                      value={newPlaylistTitle}
+                      onChange={(e) => setNewPlaylistTitle(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      autoFocus
+                    />
+
+                    {userPlaylists.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCreatePlaylistInput(false)}
+                        className="text-xs text-indigo-400 hover:underline inline-block pt-1"
+                      >
+                        ← Kembali ke daftar playlist
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800/60">
+                  <button
+                    type="button"
+                    onClick={() => setPlaylistModalOpen(false)}
+                    className="px-5 py-2.5 text-xs font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/70 transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={playlistLoading}
+                    className="px-6 py-2.5 text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 rounded-xl transition shadow-lg shadow-indigo-600/30 disabled:opacity-50 active:scale-95"
+                  >
+                    {playlistLoading ? 'Menyimpan...' : 'Simpan Anime'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Login Modal */}
       <LoginModal

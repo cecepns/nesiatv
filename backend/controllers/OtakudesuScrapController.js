@@ -479,10 +479,11 @@ const desustreamFrameProxy = async (req, res) => {
   try {
     const response = await axios.get(url, {
       headers: {
-        ...DEFAULT_HEADERS,
+        'User-Agent': DEFAULT_HEADERS['User-Agent'],
         'Referer': 'https://otakudesu.blog',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
       },
-      timeout: 10000,
+      timeout: 15000,
     });
 
     const $ = cheerio.load(response.data);
@@ -511,7 +512,26 @@ const desustreamFrameProxy = async (req, res) => {
 </html>`);
     }
 
-    return res.status(404).send('Video source not found');
+    // Fallback: If no direct <video source> tag, proxy the HTML body directly from desustream (base url rewritten)
+    let rawHtml = response.data;
+    try {
+      const u = new URL(url);
+      const origin = u.origin;
+      const basePath = u.pathname.substring(0, u.pathname.lastIndexOf('/') + 1);
+      const baseUrl = origin + basePath;
+      
+      // Inject <base> tag so relative js/css/video assets load properly from desustream
+      if (rawHtml.includes('<head>')) {
+        rawHtml = rawHtml.replace('<head>', `<head><base href="${baseUrl}">`);
+      } else {
+        rawHtml = `<base href="${baseUrl}">` + rawHtml;
+      }
+    } catch (e) {
+      /* ignore URL parse error */
+    }
+
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(rawHtml);
   } catch (error) {
     return res.status(500).send('Error fetching video player: ' + error.message);
   }

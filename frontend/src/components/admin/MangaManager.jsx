@@ -470,7 +470,7 @@ const MangaManager = () => {
 
     try {
       if (editingStream?.id) {
-        await apiClient.deleteEpisodeVideo(selectedChapterForImages.id, editingStream.id);
+        await apiClient.deleteEpisodeVideo(editingStream.id);
       }
 
       if (videoSourceType === "url") {
@@ -549,7 +549,7 @@ const MangaManager = () => {
     if (!confirm("Apakah Anda yakin ingin menghapus gambar ini?")) return;
 
     try {
-      await apiClient.deleteEpisodeVideo(episodeId, imageId);
+      await apiClient.deleteEpisodeVideo(imageId);
       // Remove image from state
       setChapterImagesMap((prev) => ({
         ...prev,
