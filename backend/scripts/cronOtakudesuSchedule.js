@@ -1,8 +1,16 @@
+const path = require('path');
 const cron = require('node-cron');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const db = require('../db');
-const { generateSlug } = require('../utils/slug');
+
+let db, generateSlug;
+try {
+  db = require('./db');
+  generateSlug = require('./utils/slug').generateSlug;
+} catch (e) {
+  db = require('../db');
+  generateSlug = require('../utils/slug').generateSlug;
+}
 
 const BASE_URL = 'https://otakudesu.blog';
 
@@ -184,25 +192,171 @@ async function scrapeAnimeDetailByUrl(url) {
     }
   });
 
-  // Insert or Update episodes safely (prevents duplicate inserts by checking ep slug)
+  // Insert or Update episodes safely and check stream links
   let newEpisodesCount = 0;
   for (const ep of episodes) {
+    let epId;
     const [existingEp] = await db.execute('SELECT id FROM episodes WHERE slug = ?', [ep.slug]);
     if (existingEp.length > 0) {
+      epId = existingEp[0].id;
       await db.execute(
         'UPDATE episodes SET title = ?, episode_number = ?, updated_at = NOW() WHERE id = ?',
-        [ep.title, ep.episodeNumber, existingEp[0].id]
+        [ep.title, ep.episodeNumber, epId]
       );
     } else {
-      await db.execute(
+      const [newEp] = await db.execute(
         'INSERT INTO episodes (anime_id, title, slug, episode_number, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())',
         [animeId, ep.title, ep.slug, ep.episodeNumber]
       );
+      epId = newEp.insertId;
       newEpisodesCount++;
+    }
+
+    // Check if episode already has stream video sources in DB
+    const [existingVideos] = await db.execute('SELECT id FROM episode_videos WHERE episode_id = ? LIMIT 1', [epId]);
+    if (existingVideos.length === 0) {
+      console.log(`[Cron Otakudesu] Scraping stream links for episode "${ep.title}" (${ep.slug})...`);
+      try {
+        await scrapeEpisodeStreamLinks(ep.url, epId);
+        await delay(500);
+      } catch (streamErr) {
+        console.error(`[Cron Otakudesu] Failed scraping stream links for ${ep.slug}:`, streamErr?.message || streamErr);
+      }
     }
   }
 
   console.log(`[Cron Otakudesu] "${title}" synced (${episodes.length} episodes, ${newEpisodesCount} new).`);
+}
+
+async function scrapeEpisodeStreamLinks(url, episodeId) {
+  if (!url || !episodeId) return;
+
+  const $ = await fetchHtml(url);
+  const videoSources = [];
+
+  // 1. Check primary iframe embed
+  const embedIframe = $('.responsive-embed-stream iframe, .embed-stream iframe, iframe').first();
+  if (embedIframe && embedIframe.attr('src')) {
+    videoSources.push({
+      episode_id: episodeId,
+      quality: 'Default',
+      server: 'Primary Embed',
+      url: embedIframe.attr('src'),
+    });
+  }
+
+  // 2. Parse mirrorstream AJAX links
+  const scripts = $('script').map((i, el) => $(el).html()).get();
+  let nonceAction = '';
+  let mirrorAction = '';
+
+  for (const s of scripts) {
+    if (s && s.includes('admin-ajax.php')) {
+      const nonceMatch = s.match(/data:\s*\{\s*action:\s*["']([a-f0-9]{32})["']\s*\}/);
+      if (nonceMatch) nonceAction = nonceMatch[1];
+      const mirrorMatch = s.match(/nonce:\s*\w+,\s*action:\s*["']([a-f0-9]{32})["']/);
+      if (mirrorMatch) mirrorAction = mirrorMatch[1];
+    }
+  }
+
+  if (nonceAction && mirrorAction) {
+    try {
+      const querystring = require('querystring');
+      const client = axios.create({
+        headers: {
+          'User-Agent': DEFAULT_HEADERS['User-Agent'],
+          'Accept': '*/*',
+          'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Referer': url,
+          'Origin': 'https://otakudesu.blog',
+        },
+        timeout: 10000,
+      });
+
+      const nonceRes = await client.post('https://otakudesu.blog/wp-admin/admin-ajax.php', querystring.stringify({ action: nonceAction }));
+      const nonce = nonceRes.data?.data;
+
+      if (nonce) {
+        const mirrorLinks = [];
+        $('.mirrorstream ul').each((_, ul) => {
+          const qClass = $(ul).attr('class') || '';
+          const quality = qClass.replace('mirror', '').replace('m', '').trim() || 'Default';
+          $(ul).find('li a').each((_, a) => {
+            const text = $(a).text().trim();
+            const content = $(a).attr('data-content');
+            if (content) {
+              mirrorLinks.push({ quality, server: text, content });
+            }
+          });
+        });
+
+        for (const item of mirrorLinks) {
+          try {
+            const decoded = JSON.parse(Buffer.from(item.content, 'base64').toString('utf-8'));
+            const streamRes = await client.post(
+              'https://otakudesu.blog/wp-admin/admin-ajax.php',
+              querystring.stringify({
+                ...decoded,
+                nonce,
+                action: mirrorAction,
+              })
+            );
+
+            if (streamRes.data && streamRes.data.data) {
+              const decodedHtml = Buffer.from(streamRes.data.data, 'base64').toString('utf-8');
+              const iframeSrc = cheerio.load(decodedHtml)('iframe').attr('src');
+              if (iframeSrc) {
+                const isDuplicate = videoSources.some((v) => v.url === iframeSrc);
+                if (!isDuplicate) {
+                  videoSources.push({
+                    episode_id: episodeId,
+                    quality: item.quality,
+                    server: item.server,
+                    url: iframeSrc,
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            // ignore mirror error
+          }
+        }
+      }
+    } catch (ajaxErr) {
+      // ignore ajax err
+    }
+  }
+
+  // 3. Parse download section
+  $('.download ul li').each((_, liEl) => {
+    const qualityText = $(liEl).find('strong').text().replace('MP4', '').replace('MKV', '').trim() || 'Download';
+    $(liEl).find('a').each((_, aEl) => {
+      const serverName = $(aEl).text().trim();
+      const downloadUrl = $(aEl).attr('href');
+
+      if (downloadUrl && downloadUrl.startsWith('http')) {
+        videoSources.push({
+          episode_id: episodeId,
+          quality: `[Download] ${qualityText}`,
+          server: serverName,
+          url: downloadUrl,
+        });
+      }
+    });
+  });
+
+  // Store in DB if found
+  if (videoSources.length > 0) {
+    await db.execute('DELETE FROM episode_videos WHERE episode_id = ?', [episodeId]);
+    for (const src of videoSources) {
+      await db.execute(
+        'INSERT INTO episode_videos (episode_id, quality, server, url) VALUES (?, ?, ?, ?)',
+        [src.episode_id, src.quality, src.server, src.url]
+      );
+    }
+  }
 }
 
 let isRunning = false;

@@ -172,7 +172,9 @@ const create = async (req, res) => {
 
     let coverUrl = null;
     if (req.file) {
-      coverUrl = `/uploads/${req.file.filename}`;
+      const key = `anime/episodes/${animeSlug}/ep-${epNum}-${Date.now()}${path.extname(req.file.originalname)}`;
+      coverUrl = await uploadFileToS3(key, req.file.path, req.file.mimetype);
+      deleteFile(req.file.path);
     }
 
     const [result] = await db.execute(
@@ -226,7 +228,14 @@ const update = async (req, res) => {
 
     let coverUrl = current.cover;
     if (req.file) {
-      coverUrl = `/uploads/${req.file.filename}`;
+      if (current.cover) {
+        await deleteUrlFromS3(current.cover);
+      }
+      const [animeRows] = await db.execute('SELECT slug FROM anime WHERE id = ?', [current.anime_id]);
+      const animeSlug = animeRows[0]?.slug || 'anime';
+      const key = `anime/episodes/${animeSlug}/ep-${epNum}-${Date.now()}${path.extname(req.file.originalname)}`;
+      coverUrl = await uploadFileToS3(key, req.file.path, req.file.mimetype);
+      deleteFile(req.file.path);
     }
 
     await db.execute(

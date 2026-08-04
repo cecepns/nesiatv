@@ -23,7 +23,7 @@ const AdsManager = () => {
     popup_ads_initial_delay_minutes: 5,
     popup_ads_unlock_seconds: 10,
     redirect_script_urls: [],
-    cdn_domain: 'https://cdn.nesiatv.net',
+    cdn_domain: 'https://cdn.komiknesia.net',
     discord_url: 'https://discord.gg/dgC22PSm9h',
     donate_url: 'https://trakteer.id/Nesiatv.id',
     komik_id_url: 'https://v1.komiknesiaku.com/',
@@ -587,11 +587,11 @@ const AdsManager = () => {
               type="text"
               value={settings.cdn_domain || ''}
               onChange={(e) => setSettings(prev => ({ ...prev, cdn_domain: e.target.value }))}
-              placeholder="https://cdn.nesiatv.net"
+              placeholder="https://data.cdnesia.my.id"
               className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
             <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-              Domain kustom untuk serve aset gambar Cloudflare R2 secara dinamis. Nilai default jika kosong: <code>https://cdn.nesiatv.net</code>.
+              Domain kustom untuk serve aset gambar Cloudflare R2 secara dinamis. Nilai default jika kosong: <code>https://cdn.komiknesia.net</code>.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-4">

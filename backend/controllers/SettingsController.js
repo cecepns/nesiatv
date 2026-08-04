@@ -70,7 +70,7 @@ const show = async (req, res) => {
           10
         ),
         redirect_script_urls: redirectScriptUrls,
-        cdn_domain: map.cdn_domain || 'https://cdn.nesiatv.net',
+        cdn_domain: map.cdn_domain || 'https://cdn.komiknesia.net',
         discord_url: map.discord_url || DEFAULT_CUSTOM_LINKS.discord_url,
         donate_url: map.donate_url || DEFAULT_CUSTOM_LINKS.donate_url,
         komik_id_url: map.komik_id_url || DEFAULT_CUSTOM_LINKS.komik_id_url,

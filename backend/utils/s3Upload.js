@@ -9,7 +9,7 @@ const S3_REGION = process.env.S3_REGION || 'auto';
 const S3_BUCKET = process.env.S3_BUCKET || 'nesiatv';
 const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || 'c004de4fd715fb374dbab19443a9c57d';
 const S3_SECRET_KEY = process.env.S3_SECRET_KEY || 'a428f2b13fa3de370549acc643736cf60a2b8c250b67ec286ead25ad51ff0273';
-const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL || 'https://cdn.nesiatv.net';
+const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL || 'https://cdn.komiknesia.net';
 
 let s3Client = null;
 if (S3_BUCKET && S3_ACCESS_KEY && S3_SECRET_KEY) {
@@ -96,10 +96,14 @@ function tryParseS3KeyFromUrl(url) {
   const raw = String(url).trim();
   if (!raw) return null;
 
-  // Raw key already stored (not a URL), e.g. "nesiatv/manga/..."
+  // Raw key already stored (not a URL), e.g. "anime/...", "videos/...", "nesiatv/..."
   if (!/^https?:\/\//i.test(raw)) {
     const normalized = raw.replace(/^\/+/, '');
-    if (normalized.startsWith(`${S3_BUCKET}/`)) {
+    if (
+      normalized.startsWith(`${S3_BUCKET}/`) ||
+      normalized.startsWith('anime/') ||
+      normalized.startsWith('videos/')
+    ) {
       return normalized;
     }
     return null;
@@ -125,6 +129,10 @@ function tryParseS3KeyFromUrl(url) {
     return pathname;
   }
 
+  if (pathname.startsWith('anime/') || pathname.startsWith('videos/')) {
+    return pathname;
+  }
+
   // Fallback for CDN/custom domains that still include /<bucket>/<key> in path
   const bucketSegment = `${S3_BUCKET}/`;
   const bucketIndex = pathname.indexOf(bucketSegment);
@@ -137,7 +145,7 @@ function tryParseS3KeyFromUrl(url) {
   }
 
   // Last resort: if path already looks like our object key, use it.
-  if (pathname.startsWith('nesiatv/')) {
+  if (pathname.startsWith('nesiatv/') || pathname.startsWith('anime/') || pathname.startsWith('videos/')) {
     return pathname;
   }
 
