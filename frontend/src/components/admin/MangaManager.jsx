@@ -210,12 +210,8 @@ const MangaManager = () => {
     const submitData = new FormData();
     submitData.append("title", formData.title);
     // Keep existing slug when editing to avoid breaking links/Otakudesu sync, only generate new slug on creation unless explicitly specified
-    if (editingManga && (formData.slug || editingManga.slug)) {
-      submitData.append("slug", formData.slug || editingManga.slug);
-    } else {
-      submitData.append("slug", generateSlug(formData.title));
-    }
-    submitData.append("author", formData.author);
+    const targetSlug = formData.slug?.trim() || (editingManga ? editingManga.slug : generateSlug(formData.title));
+    submitData.append("slug", targetSlug);
     submitData.append("synopsis", formData.synopsis);
     submitData.append("category_id", formData.category_ids[0]); // First category as primary
 
@@ -769,24 +765,6 @@ const MangaManager = () => {
                         setFormData((prev) => ({
                           ...prev,
                           title: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Author
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.author}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          author: e.target.value,
                         }))
                       }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

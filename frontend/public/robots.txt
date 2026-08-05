@@ -5,7 +5,8 @@ User-agent: *
 Allow: /
 
 # Sitemap locations (served from API)
-Sitemap: https://api-be.komiknesia.my.id/sitemap.xml
+Sitemap: https://api-be.nesiatv.my.id/sitemap.xml
+Sitemap: https://api-be.nesiatv.my.id/sitemap-manga.xml
 
 # Disallow admin and login pages
 Disallow: /admin
