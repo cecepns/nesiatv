@@ -321,7 +321,8 @@ const update = async (req, res) => {
     }
 
     const anime = existing[0];
-    const slug = title ? generateSlug(title) : anime.slug;
+    const { slug: customSlug } = req.body;
+    const slug = customSlug ? generateSlug(customSlug) : anime.slug;
 
     let thumbnail = anime.thumbnail;
     let cover_background = anime.cover_background;

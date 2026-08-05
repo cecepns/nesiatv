@@ -32,8 +32,12 @@ const MangaManager = () => {
   const [editingManga, setEditingManga] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     alternative_name: "",
+    japanese_name: "",
     author: "",
+    producer: "",
+    studio: "",
     synopsis: "",
     category_id: "",
     category_ids: [],
@@ -41,6 +45,8 @@ const MangaManager = () => {
     content_type: "manga",
     status: "ongoing",
     rating: "",
+    release: "",
+    total_episodes: "",
     color: false,
     is_project: false,
     requires_login: false,
@@ -203,7 +209,12 @@ const MangaManager = () => {
 
     const submitData = new FormData();
     submitData.append("title", formData.title);
-    submitData.append("slug", generateSlug(formData.title));
+    // Keep existing slug when editing to avoid breaking links/Otakudesu sync, only generate new slug on creation unless explicitly specified
+    if (editingManga && (formData.slug || editingManga.slug)) {
+      submitData.append("slug", formData.slug || editingManga.slug);
+    } else {
+      submitData.append("slug", generateSlug(formData.title));
+    }
     submitData.append("author", formData.author);
     submitData.append("synopsis", formData.synopsis);
     submitData.append("category_id", formData.category_ids[0]); // First category as primary
@@ -211,9 +222,18 @@ const MangaManager = () => {
     // Append genre_ids as JSON array for multiple categories
     submitData.append("genre_ids", JSON.stringify(formData.category_ids));
 
-    // Append alternative_name, country_id, content_type, status, rating, and color
+    // Append optional fields
     if (formData.alternative_name) {
       submitData.append("alternative_name", formData.alternative_name);
+    }
+    if (formData.japanese_name) {
+      submitData.append("japanese_name", formData.japanese_name);
+    }
+    if (formData.producer) {
+      submitData.append("producer", formData.producer);
+    }
+    if (formData.studio) {
+      submitData.append("studio", formData.studio);
     }
     if (formData.country_id) {
       submitData.append("country_id", formData.country_id);
@@ -226,6 +246,12 @@ const MangaManager = () => {
     }
     if (formData.rating) {
       submitData.append("rating", formData.rating);
+    }
+    if (formData.release) {
+      submitData.append("release", formData.release);
+    }
+    if (formData.total_episodes) {
+      submitData.append("total_episodes", formData.total_episodes);
     }
     submitData.append("color", formData.color ? "true" : "false");
     submitData.append("is_project", formData.is_project ? "true" : "false");
@@ -249,8 +275,12 @@ const MangaManager = () => {
       setEditingManga(null);
       setFormData({
         title: "",
+        slug: "",
         alternative_name: "",
+        japanese_name: "",
         author: "",
+        producer: "",
+        studio: "",
         synopsis: "",
         category_id: "",
         category_ids: [],
@@ -258,6 +288,8 @@ const MangaManager = () => {
         content_type: "manga",
         status: "ongoing",
         rating: "",
+        release: "",
+        total_episodes: "",
         color: false,
         is_project: false,
         requires_login: false,
@@ -284,9 +316,13 @@ const MangaManager = () => {
 
     setFormData({
       title: item.title,
+      slug: item.slug || "",
       alternative_name: item.alternative_name || "",
-      author: item.author,
-      synopsis: item.synopsis,
+      japanese_name: item.japanese_name || "",
+      author: item.author || "",
+      producer: item.producer || "",
+      studio: item.studio || "",
+      synopsis: item.synopsis || "",
       category_id:
         item.category_id || (categoryIds.length > 0 ? categoryIds[0] : ""),
       category_ids: categoryIds,
@@ -294,6 +330,8 @@ const MangaManager = () => {
       content_type: item.content_type || "manga",
       status: item.status || "ongoing",
       rating: item.rating || "",
+      release: item.release || "",
+      total_episodes: item.total_episodes || "",
       color: item.color || false,
       is_project: !!item.is_project,
       requires_login: !!item.requires_login,
@@ -846,28 +884,142 @@ const MangaManager = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Rating <span className="text-xs text-gray-500">(0.0 - 10.0)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={formData.rating}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        rating: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="0.0"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Masukkan rating dari 0.0 hingga 10.0
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nama Japanese <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.japanese_name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          japanese_name: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Judul bahasa Jepang"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Slug URL <span className="text-xs text-gray-500">(Tetap saat edit untuk cegah link putus)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.slug}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          slug: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="slug-url-anime"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Studio
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.studio}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          studio: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Contoh: MAPPA, Kyoto Animation, ufotable"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Producer
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.producer}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          producer: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Contoh: Aniplex, TV Tokyo"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Rating <span className="text-xs text-gray-500">(0.0 - 10.0)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={formData.rating}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          rating: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="0.0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Total Chapter / Episode
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.total_episodes}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          total_episodes: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="12, 24, dst"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Tahun Rilis
+                    </label>
+                    <input
+                      type="number"
+                      min="1900"
+                      max="2099"
+                      value={formData.release}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          release: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="2025, 2026, dst"
+                    />
+                  </div>
                 </div>
 
                 <div>
